@@ -1,7 +1,11 @@
 pub mod data;
 pub mod data_read;
+pub mod manager;
+pub mod types;
+
 pub use crate::data::IData;
 pub use crate::data_read::IDataRead;
+
 use bytes::{BytesMut, BufMut, Bytes, Buf};
 use paste::*;
 use anyhow::*;
