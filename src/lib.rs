@@ -1,3 +1,5 @@
+#![feature(auto_traits)]
+#![feature(negative_impls)]
 pub mod data;
 pub mod data_read;
 pub mod manager;
@@ -212,29 +214,20 @@ impl_var_number!(@u u16);
 impl_var_number!(@i i16);
 impl_var_number!(@u u32);
 impl_var_number!(@i i32);
-impl VarNumber for Vec<u8>{
+
+impl VarNumber for String{
     #[inline]
     fn write_var(self, byte: &mut BytesMut) {
-        byte.write_var_integer(self.len() as u64);
-        byte.write_buf(&self);
+        let buff=self.into_bytes();
+        byte.write_var_integer(buff.len() as u64);
+        byte.write_buf(&buff);
     }
     #[inline]
     fn read_var(bytes: &mut Bytes) -> Result<Self> where Self: Sized {
         let len=bytes.read_var_integer::<u64>()? as usize;
         let mut buff=vec![0;len];
         bytes.read_buf(&mut buff)?;
-        Ok(buff)
-    }
-}
-impl VarNumber for String{
-    #[inline]
-    fn write_var(self, byte: &mut BytesMut) {
-        let buff=self.into_bytes();
-        buff.write_var(byte);
-    }
-    #[inline]
-    fn read_var(bytes: &mut Bytes) -> Result<Self> where Self: Sized {
-        Ok(String::from_utf8( bytes.read_var_integer::<Vec<u8>>()?)?)
+        Ok(String::from_utf8( buff)?)
     }
 }
 impl VarNumber for &str{

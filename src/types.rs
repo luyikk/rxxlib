@@ -12,16 +12,14 @@ pub trait ISerdeTypeId{
 
 /// 序列化基本trait
 pub trait ISerde:ISerdeTypeId{
-    /// 设置指针偏移量 用于收发包
-    fn set_offset(&self,value:usize);
     /// 获取指针偏移量 用于收发包
-    fn get_offset(&self)->usize;
+    fn get_offset_addr(&self)->*mut u32;
     /// 获取type id
     fn get_type_id(&self)->u16;
     /// 写入当前对象 到 BytesMut
-    fn write(&self,om:ObjectManager,data:BytesMut);
+    fn write_to(&self,om:&ObjectManager,data:&mut BytesMut);
     /// 从Bytes 装载当前对象
-    fn read(&self,om:ObjectManager,data:Bytes)->Result<()>;
+    fn read_from(&self,om:&ObjectManager,data:&mut Bytes)->Result<()>;
 }
 
 /// 用于创建 共享指针
@@ -79,8 +77,22 @@ impl ISerdeCaseToType for SharedPtr<dyn ISerde> {
     #[inline]
     fn cast<T: ISerde+'static>(self) -> Result<SharedPtr<T>> {
         anyhow::ensure!(self.get_type_id() == T::type_id(),"case type error {}->{}",self.get_type_id(),T::type_id());
+
         let ptr = &self as *const SharedPtr<dyn ISerde> as *const SharedPtr<T>;
         std::mem::forget(self);
         unsafe { Ok(ptr.read()) }
+    }
+}
+
+pub trait ITypeCaseToISerde{
+    /// 实现 SharedPtr<T> 到 SharePtr<dyn ISerde>的转换
+    fn un_cast(self)-> SharedPtr<dyn ISerde>;
+}
+
+impl<T:ISerde> ITypeCaseToISerde for SharedPtr<T>{
+    fn un_cast(self) -> SharedPtr<dyn ISerde> {
+        let ptr = &self as *const SharedPtr<T> as *const SharedPtr<dyn ISerde>;
+        std::mem::forget(self);
+        unsafe { ptr.read() }
     }
 }
