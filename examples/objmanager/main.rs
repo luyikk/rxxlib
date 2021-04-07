@@ -5,40 +5,44 @@ use bytes::{Bytes, BytesMut};
 use std::cell::{Cell, RefCell};
 use sharedptr::Rc::SharedPtr;
 use std::time::Instant;
+use xxlib::IData;
 
 
 #[derive(Default)]
 struct Foo{
     __offset:u32,
-    id:Cell<i32>,
-    name:RefCell<String>
+    id:i32,
+    name:Vec<u8>
 }
 impl ISerdeTypeId for Foo{
+    #[inline]
     fn type_id() -> u16 where Self: Sized {
        16
     }
 }
 
 impl ISerde for Foo{
-
+    #[inline]
     fn get_offset_addr(&self) -> *mut u32 {
         &self.__offset as * const u32 as *mut u32
     }
-
+    #[inline]
     fn get_type_id(&self) -> u16 {
         Foo::type_id()
     }
 
+    #[inline]
     fn write_to(&self, om: &ObjectManager, data: &mut BytesMut) {
         om.write_(data,&self.id);
         om.write_(data,&self.name);
     }
-
+    #[inline]
     fn read_from(&self, _om: &ObjectManager, _data: &mut Bytes)->Result<()> {
         Ok(())
     }
 }
 impl Drop for Foo{
+    #[inline]
     fn drop(&mut self) {
         println!("foo is drop");
     }
@@ -48,24 +52,25 @@ struct Foo2{
     __offset:u32
 }
 impl ISerdeTypeId for Foo2{
+    #[inline]
     fn type_id() -> u16 where Self: Sized {
         32
     }
 }
 impl ISerde for Foo2{
-
+    #[inline]
     fn get_offset_addr(&self) -> *mut u32 {
         &self.__offset as * const u32 as *mut u32
     }
-
+    #[inline]
     fn get_type_id(&self) -> u16 {
        Foo2::type_id()
     }
-
+    #[inline]
     fn write_to(&self, _om: &ObjectManager, _data: &mut BytesMut) {
 
     }
-
+    #[inline]
     fn read_from(&self, _om: &ObjectManager, _data: &mut Bytes)->Result<()> {
         Ok(())
     }
@@ -75,20 +80,26 @@ fn main()->Result<()> {
     ObjectManager::register::<Foo>(16);
     ObjectManager::register::<Foo2>(32);
 
-    let mut data=BytesMut::with_capacity(1024*1024*2);
-    let p=ObjectManager::new();
+    let mut data=BytesMut::new();
+    // let p=ObjectManager::new();
+    //
+    // let mut foo=Foo::default();
+    // foo.id=100;
+    // foo.name=b"111111".to_vec();
+    // let foo_ptr=SharedPtr::new(foo);
+    //
+    //
+     let start=Instant::now();
+    // for _ in 0..10000000 {
+    //     data.clear();
+    //     p.write_to(&mut data, &foo_ptr);
+    // }
 
-
-    let foo=Foo::default();
-    foo.id.set(100);
-    *foo.name.borrow_mut()="111111".to_string();
-
-    let foo_ptr=SharedPtr::new(foo);
-    let start=Instant::now();
-    for _ in 0..1000000 {
-        p.write_to(&mut data, &foo_ptr);
+    for i in 0..10000000u32 {
+        data.write_fixed(i);
     }
 
-    println!("{}",start.elapsed().as_millis());
+    println!("{}",start.elapsed().as_secs_f32());
+    println!("{}",data.len());
     Ok(())
 }

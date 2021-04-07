@@ -21,6 +21,7 @@ struct ClearWriteGuard<'a>{
 }
 
 impl<'a> Drop for ClearWriteGuard<'a>{
+    #[inline]
     fn drop(&mut self) {
         for  p in self.ptr_vec.iter() {
             unsafe{
