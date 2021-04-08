@@ -87,7 +87,6 @@ impl ObjectManager{
                 self.write_sharedptr_entry(data, value);
             }
 
-
             let ptr = self.write_ptr_vec.get();
             let len = (*ptr).len();
             for i in 0..len {

@@ -79,7 +79,7 @@ fn main()->Result<()> {
     ObjectManager::register::<Foo>(16);
     ObjectManager::register::<Foo2>(32);
 
-    let mut data=Data::with_capacity(10000000);
+    let mut data=Data::with_capacity(100000000);
 
     let p=ObjectManager::new();
     let mut foo=Foo::default();
@@ -92,7 +92,14 @@ fn main()->Result<()> {
     for _ in 0..10000000u32 {
         data.clear();
         p.write_to(&mut data, &foo_ptr);
-       // p.write_(&mut data,&foo);
+        //p.write_(&mut data,&foo);
+
+        // p.write_(&mut data,&foo.id);
+        // p.write_(&mut data,&foo.name);
+
+        // data.write_var_integer(&foo.id);
+        // data.write_var_integer(&(foo.name.len() as u32));
+        // data.write_buf(&foo.name);
     }
 
     println!("{}",start.elapsed().as_secs_f32());
