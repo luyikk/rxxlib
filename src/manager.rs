@@ -78,14 +78,22 @@ impl ObjectManager{
     #[inline]
     pub fn write_to<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
-            let _hot = ClearWriteGuard {
-                ptr_vec: &mut *self.write_ptr_vec.get()
-            };
+            // let _hot = ClearWriteGuard {
+            //     ptr_vec: &mut *self.write_ptr_vec.get()
+            // };
             if value.is_null() {
                 panic!("write_to shared ptr not null")
             } else {
                 self.write_sharedptr_entry(data, value);
             }
+
+
+            let ptr = self.write_ptr_vec.get();
+            let len = (*ptr).len();
+            for i in 0..len {
+                (*ptr).as_mut_ptr().add(i).read().write(0);
+            }
+            (*ptr).clear();
         }
     }
 
