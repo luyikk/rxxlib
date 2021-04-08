@@ -1,8 +1,9 @@
 use sharedptr::Rc::SharedPtr;
-use bytes::{BytesMut, Bytes};
 use anyhow::{Result};
 use std::cell::UnsafeCell;
 use crate::manager::ObjectManager;
+use crate::data::Data;
+use crate::data_read::DataReader;
 
 /// 用于给类型返回TypeId
 pub trait ISerdeTypeId{
@@ -17,9 +18,9 @@ pub trait ISerde:ISerdeTypeId{
     /// 获取type id
     fn get_type_id(&self)->u16;
     /// 写入当前对象 到 BytesMut
-    fn write_to(&self,om:&ObjectManager,data:&mut BytesMut);
+    fn write_to(&self,om:&ObjectManager,data:&mut Data);
     /// 从Bytes 装载当前对象
-    fn read_from(&self,om:&ObjectManager,data:&mut Bytes)->Result<()>;
+    fn read_from(&self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
 }
 
 /// 用于创建 共享指针

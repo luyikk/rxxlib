@@ -2,11 +2,10 @@ use sharedptr::Rc::SharedPtr;
 use lazy_static::lazy_static;
 use crate::types::{TypeClass, ISerde};
 use std::rc::{Rc, Weak};
-use bytes::BytesMut;
 use std::cell::{RefCell, Cell, UnsafeCell};
-use crate::IData;
 use impl_trait_for_tuples::*;
 use std::collections::{HashMap, BTreeMap, HashSet, BTreeSet};
+use crate::data::Data;
 
 lazy_static!{
     static ref TYPES:TypeClass={
@@ -36,7 +35,7 @@ impl<'a> Drop for ClearWriteGuard<'a>{
 /// 用于筛选 struct 内部写入 的类型判断
 #[impl_for_tuples(1, 50)]
 pub trait IWriteInner{
-    fn write_(&self,om:&ObjectManager,data:&mut BytesMut);
+    fn write_(&self,om:&ObjectManager,data:&mut Data);
 }
 
 /// 剔除 Option Weak<T>
@@ -77,12 +76,11 @@ impl ObjectManager{
 
     /// 写入入口函数
     #[inline]
-    pub fn write_to<T:ISerde>(&self,data:&mut BytesMut,value:&SharedPtr<T>){
+    pub fn write_to<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
             let hot = ClearWriteGuard {
                 ptr_vec: &mut *self.write_ptr_vec.get()
             };
-
             if value.is_null() {
                 panic!("write_to shared ptr not null")
             } else {
@@ -94,30 +92,30 @@ impl ObjectManager{
 
     /// 生成物结构内部写入
     #[inline]
-    pub fn write_<T:IWriteInner>(&self,data:&mut BytesMut,value:&T){
+    pub fn write_<T:IWriteInner>(&self,data:&mut Data,value:&T){
         value.write_(self,data);
     }
 
     /// 生成物结构内部写入 数组
     #[inline]
-    pub fn write_array<T:IWriteInner>(&self,data:&mut BytesMut,value:T){
+    pub fn write_array<T:IWriteInner>(&self,data:&mut Data,value:T){
         value.write_(self,data);
     }
 
     /// 写入共享指针入口
     #[inline]
-    pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut BytesMut,value:&SharedPtr<T>){
+    pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
             (*self.write_ptr_vec.get()).push(value.get_offset_addr());
-            value.get_offset_addr().write(1)
+            value.get_offset_addr().write(1);
+            data.write_var_integer(value.get_type_id());
+            self.write_ptr(data, value);
         }
-        data.write_var_integer(value.get_type_id());
-        self.write_ptr(data,value);
     }
 
     /// 写入共享指针
     #[inline]
-    pub(crate) fn write_sharedptr<T:ISerde>(&self,data:&mut BytesMut,value:&SharedPtr<T>){
+    pub(crate) fn write_sharedptr<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         if value.is_null(){
             data.write_fixed(0u8);
         }else{
@@ -126,9 +124,9 @@ impl ObjectManager{
                 let offset = value_addr.read();
                 if offset == 0 {
                     (*self.write_ptr_vec.get()).push(value.get_offset_addr());
-                    let offset = (*self.write_ptr_vec.get()).len();
-                    value_addr.write(offset as u32);
-                    data.write_var_integer(offset as u32);
+                    let offset = (*self.write_ptr_vec.get()).len() as u32;
+                    value_addr.write(offset);
+                    data.write_var_integer(offset);
                     data.write_var_integer(value.get_type_id());
                 } else {
                     data.write_var_integer(offset);
@@ -138,7 +136,7 @@ impl ObjectManager{
     }
 
     #[inline]
-    fn write_ptr<T:ISerde>(&self,data:&mut BytesMut,value:&SharedPtr<T>){
+    fn write_ptr<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         value.write_to(self,data)
     }
 }
@@ -147,14 +145,14 @@ impl ObjectManager{
 
 impl<T:ISerde> IWriteInner for SharedPtr<T>{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
          om.write_sharedptr(data,self);
     }
 }
 
 impl<T:ISerde> IWriteInner for Option<Weak<T>>{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         if let Some(weak) = self {
             weak.write_(om,data);
         }else {
@@ -165,7 +163,7 @@ impl<T:ISerde> IWriteInner for Option<Weak<T>>{
 
 impl<T:ISerde> IWriteInner for Weak<T>{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         if let Some(ptr) = self.upgrade() {
             let ptr = SharedPtr::from(ptr);
             om.write_sharedptr(data, &ptr);
@@ -177,7 +175,7 @@ impl<T:ISerde> IWriteInner for Weak<T>{
 
 impl <T:IWriteInner+SiftOption> IWriteInner for Option<T>{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         if let Some(v)=self{
             data.write_fixed(1u8);
             v.write_(om,data);
@@ -189,7 +187,7 @@ impl <T:IWriteInner+SiftOption> IWriteInner for Option<T>{
 
 impl<T:ISerde+Default> IWriteInner for T{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         self.write_to(om,data);
     }
 }
@@ -198,7 +196,7 @@ macro_rules! impl_iwrite_inner_number_var {
     ($type:tt) => (
     impl IWriteInner for $type{
         #[inline]
-        fn write_(&self, _: &ObjectManager, data: &mut BytesMut) {
+        fn write_(&self, _: &ObjectManager, data: &mut Data) {
             data.write_var_integer(self.clone())
         }
     });
@@ -213,7 +211,7 @@ impl_iwrite_inner_number_var!(i64);
 impl_iwrite_inner_number_var!(String);
 impl IWriteInner for &str{
     #[inline]
-    fn write_(&self, _: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, _: &ObjectManager, data: &mut Data) {
         data.write_var_integer(*self);
     }
 }
@@ -222,7 +220,7 @@ macro_rules! impl_iwrite_inner_number_fixed {
     ($type:tt) => (
         impl IWriteInner for $type{
             #[inline]
-            fn write_(&self, _: &ObjectManager, data: &mut BytesMut) {
+            fn write_(&self, _: &ObjectManager, data: &mut Data) {
                 data.write_fixed(self.clone())
             }
         }
@@ -240,7 +238,7 @@ impl_iwrite_inner_number_fixed!(f64);
 
 impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         data.write_var_integer(self.len() as u64);
         for x in self.iter() {
             x.write_(om,data);
@@ -250,7 +248,7 @@ impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
 
 impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
     #[inline]
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         data.write_var_integer(self.len() as u64);
         for x in self.iter() {
             x.write_(om,data);
@@ -261,7 +259,7 @@ impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
 
 impl IWriteInner for Vec<u8>{
     #[inline]
-    fn write_(&self,_om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self,_om: &ObjectManager, data: &mut Data) {
         data.write_var_integer(self.len() as u64);
         data.write_buf(self);
     }
@@ -269,7 +267,7 @@ impl IWriteInner for Vec<u8>{
 
 impl IWriteInner for &[u8]{
     #[inline]
-    fn write_(&self, _om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, _om: &ObjectManager, data: &mut Data) {
         data.write_var_integer(self.len() as u64);
         data.write_buf(self);
     }
@@ -280,7 +278,7 @@ macro_rules! impl_iwrite_inner_for_mapset {
     ($type:tt) =>(
     impl <K:IWriteInner> IWriteInner for $type::<K>{
         #[inline]
-        fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+        fn write_(&self, om: &ObjectManager, data: &mut Data) {
             data.write_var_integer(self.len() as u64);
             for k in self.iter() {
                 k.write_(om, data);
@@ -295,7 +293,7 @@ macro_rules! impl_iwrite_inner_for_map {
     ($type:tt) => (
     impl <K:IWriteInner,V:IWriteInner> IWriteInner for $type<K,V>{
         #[inline]
-        fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+        fn write_(&self, om: &ObjectManager, data: &mut Data) {
             data.write_var_integer(self.len() as u64);
             for (k,v) in self.iter() {
                 k.write_(om, data);
@@ -310,13 +308,13 @@ impl_iwrite_inner_for_map!(BTreeMap);
 
 
 impl <T:IWriteInner> IWriteInner for RefCell<T>{
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         self.borrow().write_(om,data);
     }
 }
 
 impl <T:IWriteInner+Copy> IWriteInner for Cell<T>{
-    fn write_(&self, om: &ObjectManager, data: &mut BytesMut) {
+    fn write_(&self, om: &ObjectManager, data: &mut Data) {
         self.get().write_(om,data);
     }
 }
