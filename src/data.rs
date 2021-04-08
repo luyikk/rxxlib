@@ -3,12 +3,12 @@ use std::ops::{Deref, DerefMut};
 use std::mem::size_of;
 
 pub trait WNumberFixed {
-    fn write(self,data:&mut Data);
-    fn write_at(self,idx:usize,data:&mut Data)->Result<()>;
+    fn write(&self,data:&mut Data);
+    fn write_at(&self,idx:usize,data:&mut Data)->Result<()>;
 }
 
 pub trait WNumberVar {
-    fn write(self,data:&mut Data);
+    fn write(&self,data:&mut Data);
 }
 
 #[derive(Debug,Default)]
@@ -22,7 +22,7 @@ macro_rules! impl_number_fixed {
     impl WNumberFixed for $type{
         #[cfg(not(feature = "BigEndian"))]
         #[inline]
-        fn write(self, data: &mut Data) {
+        fn write(&self, data: &mut Data) {
             unsafe{
                 let size=size_of::<$type>();
                 let len=data.check_reserve(size);
@@ -32,7 +32,7 @@ macro_rules! impl_number_fixed {
         }
         #[cfg(not(feature = "BigEndian"))]
          #[inline]
-        fn write_at(self, idx:usize,data: &mut Data)->Result<()>{
+        fn write_at(&self, idx:usize,data: &mut Data)->Result<()>{
             unsafe{
                 let size=size_of::<$type>();
                 ensure!(idx.wrapping_add(size)<=data.len(),"idx too max {}>{}",idx.wrapping_add(size),data.len());
@@ -43,7 +43,7 @@ macro_rules! impl_number_fixed {
 
         #[cfg(feature = "BigEndian")]
         #[inline]
-        fn write(self, data: &mut Data) {
+        fn write(&self, data: &mut Data) {
             unsafe{
                 let size=size_of::<$type>();
                 let len=data.check_reserve(size);
@@ -53,7 +53,7 @@ macro_rules! impl_number_fixed {
         }
         #[cfg(feature = "BigEndian")]
          #[inline]
-        fn write_at(self, idx:usize,data: &mut Data)->Result<()>{
+        fn write_at(&self, idx:usize,data: &mut Data)->Result<()>{
             unsafe{
                 let size=size_of::<$type>();
                 ensure!(idx.wrapping_add(size)<=data.len(),"idx too max {}>{}",idx.wrapping_add(size),data.len());
@@ -77,118 +77,121 @@ impl_number_fixed!(f64);
 
 impl WNumberVar for u16{
     #[inline]
-    fn write(mut self, data: &mut Data) {
-        let size=compute_raw_varint64_size(self as u64);
+    fn write(&self, data: &mut Data) {
+        let mut value=*self;
+        let size=compute_raw_varint64_size(value as u64);
         let current_len=data.check_reserve(size);
         unsafe {
             let mut len: usize = 1;
             let mut ptr = data.as_mut_ptr().add(current_len);
-            while self >= 1 << 7 {
-                ptr.write((self & 0x7f | 0x80) as u8);
+            while value >= 1 << 7 {
+                ptr.write((value & 0x7f | 0x80) as u8);
                 ptr=ptr.offset(1);
                 len +=1;
-                self >>= 7;
+                value >>= 7;
             }
-            ptr.write(self as u8);
+            ptr.write(value as u8);
             data.set_len(current_len+ len);
         }
     }
 }
 impl WNumberVar for i16{
     #[inline]
-    fn write(self, data: &mut Data) {
-        WNumberVar::write(zig_zag_encode_u16(self), data);
+    fn write(&self, data: &mut Data) {
+        WNumberVar::write(&zig_zag_encode_u16(self), data);
     }
 }
 impl WNumberVar for u32{
     #[inline]
-    fn write(mut self, data: &mut Data) {
-        let size=compute_raw_varint32_size(self);
+    fn write(&self, data: &mut Data) {
+        let mut value=*self;
+        let size=compute_raw_varint32_size(value);
         let current_len=data.check_reserve(size);
         unsafe {
             let mut len: usize = 1;
             let mut ptr = data.as_mut_ptr().add(current_len);
-            while self >= 1 << 7 {
-                ptr.write((self & 0x7f | 0x80) as u8);
+            while value >= 1 << 7 {
+                ptr.write((value & 0x7f | 0x80) as u8);
                 ptr=ptr.offset(1);
                 len +=1;
-                self >>= 7;
+                value >>= 7;
             }
-            ptr.write(self as u8);
+            ptr.write(value as u8);
             data.set_len(current_len+ len);
         }
     }
 }
 impl WNumberVar for i32{
     #[inline]
-    fn write(self, data: &mut Data) {
-        WNumberVar::write(zig_zag_encode_u32(self), data);
+    fn write(&self, data: &mut Data) {
+        WNumberVar::write(&mut zig_zag_encode_u32(self), data);
     }
 }
 impl WNumberVar for u64{
     #[inline]
-    fn write(mut self, data: &mut Data) {
-        let size=compute_raw_varint64_size(self);
+    fn write(&self, data: &mut Data) {
+        let mut value=*self;
+        let size=compute_raw_varint64_size(value);
         let current_len=data.check_reserve(size);
         unsafe {
             let mut len: usize = 1;
             let mut ptr = data.as_mut_ptr().add(current_len);
-            while self >= 1 << 7 {
-                ptr.write((self & 0x7f | 0x80) as u8);
+            while value >= 1 << 7 {
+                ptr.write((value & 0x7f | 0x80) as u8);
                 ptr=ptr.offset(1);
                 len +=1;
-                self >>= 7;
+                value >>= 7;
             }
-            ptr.write(self as u8);
+            ptr.write(value as u8);
             data.set_len(current_len+ len);
         }
     }
 }
 impl WNumberVar for i64{
     #[inline]
-    fn write(self, data: &mut Data) {
-        WNumberVar::write(zig_zag_encode_u64(self), data);
+    fn write(&self, data: &mut Data) {
+        WNumberVar::write(&zig_zag_encode_u64(self), data);
     }
 }
 
 #[inline]
-fn zig_zag_encode_u16(v: i16) -> u16 {
+fn zig_zag_encode_u16(v: &i16) -> u16 {
     ((v << 1) ^ (v >> 15)) as u16
 }
 #[inline]
-fn zig_zag_encode_u32(v: i32) -> u32 {
+fn zig_zag_encode_u32(v: &i32) -> u32 {
     ((v << 1) ^ (v >> 31)) as u32
 }
 #[inline]
-fn zig_zag_encode_u64(v: i64) -> u64 {
+fn zig_zag_encode_u64(v: &i64) -> u64 {
     ((v << 1) ^ (v >> 63)) as u64
 }
 
 impl WNumberVar for String{
     #[inline]
-    fn write(self, data: &mut Data) {
-        let buff=self.into_bytes();
-        data.write_var_integer(buff.len() as u64);
+    fn write(&self, data: &mut Data) {
+        let buff=self.as_bytes();
+        data.write_var_integer(&mut (buff.len() as u64));
         data.write_buf(&buff);
     }
 }
 impl WNumberVar for &str{
     #[inline]
-    fn write(self, data: &mut Data) {
+    fn write(&self, data: &mut Data) {
         let buff=self.as_bytes();
-        data.write_var_integer(buff.len() as u64);
+        data.write_var_integer(&mut (buff.len() as u64));
         data.write_buf(&buff);
     }
 }
 impl WNumberFixed for bool{
     #[inline]
-    fn write(self, data: &mut Data) {
-        let v=if self {1u8}else{0u8};
-        data.write_fixed(v);
+    fn write(&self, data: &mut Data) {
+        let v=if *self {1u8}else{0u8};
+        data.write_fixed(&v);
     }
 
-    fn write_at(self, idx: usize, data: &mut Data) -> Result<()> {
-        let v=if self {1u8}else{0u8};
+    fn write_at(&self, idx: usize, data: &mut Data) -> Result<()> {
+        let v=if *self {1u8}else{0u8};
         data.write_fixed_at(idx,v)
     }
 }
@@ -227,7 +230,7 @@ impl Data{
     }
 
     #[inline]
-    pub fn write_fixed(&mut self,v:impl WNumberFixed){
+    pub fn write_fixed(&mut self,v:&impl WNumberFixed){
         v.write(self)
     }
 
@@ -237,7 +240,7 @@ impl Data{
     }
 
     #[inline]
-    pub fn write_var_integer(&mut self,v:impl WNumberVar){
+    pub fn write_var_integer(&mut self,v:&impl WNumberVar){
         v.write(self);
     }
 

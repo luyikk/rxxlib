@@ -4,14 +4,14 @@ use xxlib::data_read::DataReader;
 
 fn main()->Result<()> {
     let mut data = Data::new();
-    data.write_fixed(1i32);
-    data.write_fixed(2i64);
-    data.write_fixed(3f64);
-    data.write_var_integer(123u32);
-    data.write_var_integer(321i32);
-    data.write_var_integer(123u64);
-    data.write_var_integer(321i64);
-    data.write_var_integer("hello world");
+    data.write_fixed(&1i32);
+    data.write_fixed(&2i64);
+    data.write_fixed(&3f64);
+    data.write_var_integer(&123u32);
+    data.write_var_integer(&321i32);
+    data.write_var_integer(&123u64);
+    data.write_var_integer(&321i64);
+    data.write_var_integer(&"hello world");
 
 
     let mut data = DataReader::from(&data[..]);

@@ -108,7 +108,7 @@ impl ObjectManager{
             let offst_addr=value.get_offset_addr();
             (*self.write_ptr_vec.get()).push(offst_addr);
             offst_addr.write(1);
-            data.write_var_integer(value.get_type_id());
+            data.write_var_integer(&value.get_type_id());
             self.write_ptr(data, value);
         }
     }
@@ -117,7 +117,7 @@ impl ObjectManager{
     #[inline]
     pub(crate) fn write_sharedptr<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         if value.is_null(){
-            data.write_fixed(0u8);
+            data.write_fixed(&0u8);
         }else{
             let value_addr=value.get_offset_addr();
             unsafe {
@@ -126,11 +126,11 @@ impl ObjectManager{
                     (*self.write_ptr_vec.get()).push(value.get_offset_addr());
                     let offset = (*self.write_ptr_vec.get()).len() as u32;
                     value_addr.write(offset);
-                    data.write_var_integer(offset);
-                    data.write_var_integer(value.get_type_id());
+                    data.write_var_integer(&offset);
+                    data.write_var_integer(&value.get_type_id());
                     self.write_ptr(data, value);
                 } else {
-                    data.write_var_integer(offset);
+                    data.write_var_integer(&offset);
                 }
             }
         }
@@ -157,7 +157,7 @@ impl<T:ISerde> IWriteInner for Option<Weak<T>>{
         if let Some(weak) = self {
             weak.write_(om,data);
         }else {
-            data.write_fixed(0u8);
+            data.write_fixed(&0u8);
         }
     }
 }
@@ -169,7 +169,7 @@ impl<T:ISerde> IWriteInner for Weak<T>{
             let ptr = SharedPtr::from(ptr);
             om.write_sharedptr(data, &ptr);
         }else{
-            data.write_fixed(0u8);
+            data.write_fixed(&0u8);
         }
     }
 }
@@ -178,10 +178,10 @@ impl <T:IWriteInner+SiftOption> IWriteInner for Option<T>{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) {
         if let Some(v)=self{
-            data.write_fixed(1u8);
+            data.write_fixed(&1u8);
             v.write_(om,data);
         }else{
-            data.write_fixed(0u8);
+            data.write_fixed(&0u8);
         }
     }
 }
@@ -198,7 +198,7 @@ macro_rules! impl_iwrite_inner_number_var {
     impl IWriteInner for $type{
         #[inline]
         fn write_(&self, _: &ObjectManager, data: &mut Data) {
-            data.write_var_integer(self.clone())
+            data.write_var_integer(self)
         }
     });
 }
@@ -213,7 +213,7 @@ impl_iwrite_inner_number_var!(String);
 impl IWriteInner for &str{
     #[inline]
     fn write_(&self, _: &ObjectManager, data: &mut Data) {
-        data.write_var_integer(*self);
+        data.write_var_integer(self);
     }
 }
 
@@ -222,7 +222,7 @@ macro_rules! impl_iwrite_inner_number_fixed {
         impl IWriteInner for $type{
             #[inline]
             fn write_(&self, _: &ObjectManager, data: &mut Data) {
-                data.write_fixed(self.clone())
+                data.write_fixed(self)
             }
         }
     );
@@ -240,7 +240,7 @@ impl_iwrite_inner_number_fixed!(f64);
 impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) {
-        data.write_var_integer(self.len() as u64);
+        data.write_var_integer(&(self.len() as u64));
         for x in self.iter() {
             x.write_(om,data);
         }
@@ -250,7 +250,7 @@ impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
 impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) {
-        data.write_var_integer(self.len() as u64);
+        data.write_var_integer(&(self.len() as u64));
         for x in self.iter() {
             x.write_(om,data);
         }
@@ -261,7 +261,7 @@ impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
 impl IWriteInner for Vec<u8>{
     #[inline]
     fn write_(&self,_om: &ObjectManager, data: &mut Data) {
-        data.write_var_integer(self.len() as u64);
+        data.write_var_integer(&(self.len() as u64));
         data.write_buf(self);
     }
 }
@@ -269,7 +269,7 @@ impl IWriteInner for Vec<u8>{
 impl IWriteInner for &[u8]{
     #[inline]
     fn write_(&self, _om: &ObjectManager, data: &mut Data) {
-        data.write_var_integer(self.len() as u64);
+        data.write_var_integer(&(self.len() as u64));
         data.write_buf(self);
     }
 }
@@ -280,7 +280,7 @@ macro_rules! impl_iwrite_inner_for_mapset {
     impl <K:IWriteInner> IWriteInner for $type::<K>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data) {
-            data.write_var_integer(self.len() as u64);
+            data.write_var_integer(&(self.len() as u64));
             for k in self.iter() {
                 k.write_(om, data);
             }
@@ -295,7 +295,7 @@ macro_rules! impl_iwrite_inner_for_map {
     impl <K:IWriteInner,V:IWriteInner> IWriteInner for $type<K,V>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data) {
-            data.write_var_integer(self.len() as u64);
+            data.write_var_integer(&(self.len() as u64));
             for (k,v) in self.iter() {
                 k.write_(om, data);
                 v.write_(om, data);

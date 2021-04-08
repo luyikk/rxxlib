@@ -11,42 +11,42 @@ fn test_write()->Result<()>{
     data.write_buf_at(1,&[1,1,1])?;
     assert_eq!(&data[..],&[1,1,1,1]);
 
-    data.write_fixed(1u8);
+    data.write_fixed(&1u8);
     assert_eq!(&data[..],&[1,1,1,1,1]);
 
-    data.write_fixed(1i8);
+    data.write_fixed(&1i8);
     assert_eq!(&data[..],&[1,1,1,1,1,1]);
 
-    data.write_fixed(1u16);
+    data.write_fixed(&1u16);
     assert_eq!(&data[..],&[1,1,1,1,1,1,1,0]);
 
     data.write_fixed_at(1,1i32)?;
     assert_eq!(&data[..],&[1,1,0,0,0,1,1,0]);
 
     let mut data=Data::new();
-    data.write_var_integer(1u32);
+    data.write_var_integer(&1u32);
     assert_eq!(&data[..],&[1]);
 
-    data.write_var_integer(1i32);
+    data.write_var_integer(&1i32);
     assert_eq!(&data[..],&[1,2]);
 
-    data.write_fixed(1f32);
+    data.write_fixed(&1f32);
 
     let mut data=Data::new();
-    data.write_var_integer("123123");
+    data.write_var_integer(&"123123");
     assert_eq!(&data[..],&[6, 49, 50, 51, 49, 50, 51]);
 
     let mut data=Data::new();
-    data.write_var_integer("123123".to_string());
+    data.write_var_integer(&"123123".to_string());
     assert_eq!(&data[..],&[6, 49, 50, 51, 49, 50, 51]);
 
     let mut data=Data::new();
-    data.write_fixed(1u8);
-    data.write_fixed(2i16);
-    data.write_fixed(3i32);
-    data.write_fixed(4i64);
-    data.write_fixed(5f32);
-    data.write_fixed(6f64);
+    data.write_fixed(&1u8);
+    data.write_fixed(&2i16);
+    data.write_fixed(&3i32);
+    data.write_fixed(&4i64);
+    data.write_fixed(&5f32);
+    data.write_fixed(&6f64);
 
     let mut rd=DataReader::from(&data[..]);
     assert_eq!(1,rd.read_fixed::<u8>()?);
@@ -68,10 +68,10 @@ fn test_read()->Result<()>{
     assert_eq!(read,[1,2]);
 
     let mut data=Data::new();
-    data.write_var_integer(123u32);
-    data.write_var_integer(321i32);
-    data.write_var_integer(123u64);
-    data.write_var_integer(321i64);
+    data.write_var_integer(&123u32);
+    data.write_var_integer(&321i32);
+    data.write_var_integer(&123u64);
+    data.write_var_integer(&321i64);
 
     let mut data=DataReader::from(&data[..]);
     let x:u32=data.read_var_integer()?;
@@ -84,7 +84,7 @@ fn test_read()->Result<()>{
     assert_eq!(321,x);
 
     let mut data=Data::new();
-    data.write_var_integer("hello world");
+    data.write_var_integer(&"hello world");
     let mut data=DataReader::from(&data[..]);
     let msg:String=data.read_var_integer()?;
     assert_eq!(msg,"hello world");
