@@ -22,12 +22,12 @@ struct ClearWriteGuard<'a>{
 impl<'a> Drop for ClearWriteGuard<'a>{
     #[inline]
     fn drop(&mut self) {
-        for  p in self.ptr_vec.iter() {
-            unsafe{
-                p.write(0);
+        unsafe {
+            for i in 0..self.ptr_vec.len() {
+                self.ptr_vec.as_mut_ptr().add(i).read().write(0);
             }
+            self.ptr_vec.clear();
         }
-        self.ptr_vec.clear()
     }
 }
 
@@ -78,7 +78,7 @@ impl ObjectManager{
     #[inline]
     pub fn write_to<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
-            let hot = ClearWriteGuard {
+            let _hot = ClearWriteGuard {
                 ptr_vec: &mut *self.write_ptr_vec.get()
             };
             if value.is_null() {
@@ -86,7 +86,6 @@ impl ObjectManager{
             } else {
                 self.write_sharedptr_entry(data, value);
             }
-            drop(hot);
         }
     }
 
@@ -106,8 +105,9 @@ impl ObjectManager{
     #[inline]
     pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
-            (*self.write_ptr_vec.get()).push(value.get_offset_addr());
-            value.get_offset_addr().write(1);
+            let offst_addr=value.get_offset_addr();
+            (*self.write_ptr_vec.get()).push(offst_addr);
+            offst_addr.write(1);
             data.write_var_integer(value.get_type_id());
             self.write_ptr(data, value);
         }
@@ -128,6 +128,7 @@ impl ObjectManager{
                     value_addr.write(offset);
                     data.write_var_integer(offset);
                     data.write_var_integer(value.get_type_id());
+                    self.write_ptr(data, value);
                 } else {
                     data.write_var_integer(offset);
                 }

@@ -80,10 +80,17 @@ fn main()->Result<()> {
     ObjectManager::register::<Foo2>(32);
 
     let mut data=Data::with_capacity(1024);
+
     let p=ObjectManager::new();
     let mut foo=Foo::default();
     foo.id=100;
     foo.name=b"111111".to_vec();
+
+    // for _ in 0..10000000u32 {
+    //     p.write_(&mut data,&foo);
+    // }
+    // data.clear();
+
 
     let foo_ptr=SharedPtr::new(foo);
 
@@ -91,9 +98,7 @@ fn main()->Result<()> {
     for _ in 0..10000000u32 {
         data.clear();
         p.write_to(&mut data, &foo_ptr);
-       // data.clear();
-
-        //data.write_var_integer(i);
+       // p.write_(&mut data,&foo);
     }
 
     println!("{}",start.elapsed().as_secs_f32());

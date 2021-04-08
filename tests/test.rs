@@ -89,7 +89,4 @@ fn test_read()->Result<()>{
     let msg:String=data.read_var_integer()?;
     assert_eq!(msg,"hello world");
     Ok(())
-
-
-
 }
