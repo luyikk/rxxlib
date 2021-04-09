@@ -78,7 +78,6 @@ impl ISerdeCaseToType for SharedPtr<dyn ISerde> {
     #[inline]
     fn cast<T: ISerde+'static>(self) -> Result<SharedPtr<T>> {
         anyhow::ensure!(self.get_type_id() == T::type_id(),"case type error {}->{}",self.get_type_id(),T::type_id());
-
         let ptr = &self as *const SharedPtr<dyn ISerde> as *const SharedPtr<T>;
         std::mem::forget(self);
         unsafe { Ok(ptr.read()) }

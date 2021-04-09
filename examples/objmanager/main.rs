@@ -11,7 +11,7 @@ use sharedptr::Rc::SharedPtr;
 struct Foo{
     __offset:u32,
     id:i32,
-    name:Vec<u8>
+    name:String
 }
 impl ISerdeTypeId for Foo{
     #[inline]
@@ -75,6 +75,7 @@ impl ISerde for Foo2{
     }
 }
 
+
 fn main()->Result<()> {
     ObjectManager::register::<Foo>(16);
     ObjectManager::register::<Foo2>(32);
@@ -82,10 +83,10 @@ fn main()->Result<()> {
     let mut data=Data::with_capacity(100000000);
 
     let p=ObjectManager::new();
+
     let mut foo=Foo::default();
     foo.id=100;
-    foo.name=b"111111".to_vec();
-
+    foo.name="1111111".to_string();
     let foo_ptr=SharedPtr::new(foo);
 
     let start=Instant::now();

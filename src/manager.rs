@@ -31,7 +31,6 @@ impl<'a> Drop for ClearWriteGuard<'a>{
     }
 }
 
-
 /// 用于筛选 struct 内部写入 的类型判断
 #[impl_for_tuples(1, 50)]
 pub trait IWriteInner{
@@ -102,12 +101,6 @@ impl ObjectManager{
         value.write_(self,data);
     }
 
-    /// 生成物结构内部写入 数组
-    #[inline]
-    pub fn write_array<T:IWriteInner>(&self,data:&mut Data,value:T){
-        value.write_(self,data);
-    }
-
     /// 写入共享指针入口
     #[inline]
     pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
@@ -143,10 +136,12 @@ impl ObjectManager{
         }
     }
 
+    /// 写指针
     #[inline]
     fn write_ptr<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         value.write_to(self,data)
     }
+
 }
 
 
@@ -241,9 +236,6 @@ impl_iwrite_inner_number_fixed!(bool);
 impl_iwrite_inner_number_fixed!(f32);
 impl_iwrite_inner_number_fixed!(f64);
 
-
-
-
 impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) {
@@ -264,7 +256,6 @@ impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
     }
 }
 
-
 impl IWriteInner for Vec<u8>{
     #[inline]
     fn write_(&self,_om: &ObjectManager, data: &mut Data) {
@@ -280,7 +271,6 @@ impl IWriteInner for &[u8]{
         data.write_buf(self);
     }
 }
-
 
 macro_rules! impl_iwrite_inner_for_mapset {
     ($type:tt) =>(
