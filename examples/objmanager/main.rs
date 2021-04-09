@@ -1,17 +1,21 @@
 use xxlib::manager::ObjectManager;
 use anyhow::*;
-use xxlib::types::{ISerde, ISerdeTypeId};
-use std::time::Instant;
+use xxlib::types::{ISerde, ISerdeTypeId, ISerdeCaseToType};
 use xxlib::data::Data;
 use xxlib::data_read::DataReader;
 use sharedptr::Rc::SharedPtr;
+use std::rc::Weak;
+use sharedptr::ISetNullWeak;
+
 
 
 #[derive(Default)]
 struct Foo{
     __offset:u32,
     id:i32,
-    name:String
+    name:String,
+    p:Weak<Foo2>,
+    x:SharedPtr<Foo2>
 }
 impl ISerdeTypeId for Foo{
     #[inline]
@@ -34,9 +38,15 @@ impl ISerde for Foo{
     fn write_to(&self, om: &ObjectManager, data: &mut Data) {
         om.write_(data,&self.id);
         om.write_(data,&self.name);
+        om.write_(data,&self.p);
+        om.write_(data,&self.x);
     }
     #[inline]
-    fn read_from(&self, _om: &ObjectManager, _data: &mut DataReader)->Result<()> {
+    fn read_from(&mut self, om: &ObjectManager, data:&mut DataReader)->Result<()> {
+        om.read_(data, &mut self.id)?;
+        om.read_(data, &mut self.name)?;
+        om.read_(data, &mut self.p)?;
+        om.read_(data, &mut self.x)?;
         Ok(())
     }
 }
@@ -48,7 +58,8 @@ impl Drop for Foo{
 }
 #[derive(Default)]
 struct Foo2{
-    __offset:u32
+    __offset:u32,
+    id:u64
 }
 impl ISerdeTypeId for Foo2{
     #[inline]
@@ -66,11 +77,12 @@ impl ISerde for Foo2{
        Foo2::type_id()
     }
     #[inline]
-    fn write_to(&self, _om: &ObjectManager, _data: &mut Data) {
-
+    fn write_to(&self, om: &ObjectManager, data: &mut Data) {
+        om.write_(data,&self.id);
     }
     #[inline]
-    fn read_from(&self, _om: &ObjectManager, _data: &mut DataReader)->Result<()> {
+    fn read_from(&mut self, om: &ObjectManager, data: &mut DataReader)->Result<()> {
+        om.read_(data, &mut self.id)?;
         Ok(())
     }
 }
@@ -80,30 +92,29 @@ fn main()->Result<()> {
     ObjectManager::register::<Foo>(16);
     ObjectManager::register::<Foo2>(32);
 
-    let mut data=Data::with_capacity(100000000);
+    let mut data = Data::with_capacity(100000000);
 
-    let p=ObjectManager::new();
+    let p = ObjectManager::new();
 
-    let mut foo=Foo::default();
-    foo.id=100;
-    foo.name="1111111".to_string();
-    let foo_ptr=SharedPtr::new(foo);
+    let mut foo = Foo::default();
+    foo.id = 100;
+    foo.name = "123123".to_string();
+    foo.p.set_null();
+    foo.x.set_null();
+    let mut foo2 = Foo2::default();
+    foo2.id = 1000;
 
-    let start=Instant::now();
-    for _ in 0..10000000u32 {
-        data.clear();
-        p.write_to(&mut data, &foo_ptr);
-        //p.write_(&mut data,&foo);
 
-        // p.write_(&mut data,&foo.id);
-        // p.write_(&mut data,&foo.name);
+    let foo_ptr = SharedPtr::new(foo);
 
-        // data.write_var_integer(&foo.id);
-        // data.write_var_integer(&(foo.name.len() as u32));
-        // data.write_buf(&foo.name);
-    }
+    p.write_to(&mut data, &foo_ptr);
 
-    println!("{}",start.elapsed().as_secs_f32());
-    println!("{}",data.len());
+    let x = p.read_from(DataReader::from(&data[..]))?;
+    let f = x.cast::<Foo>()?;
+
+    let x = f.p.upgrade().ok_or(anyhow!("11"))?;
+
+
+
     Ok(())
 }

@@ -20,7 +20,7 @@ pub trait ISerde:ISerdeTypeId{
     /// 写入当前对象 到 BytesMut
     fn write_to(&self,om:&ObjectManager,data:&mut Data);
     /// 从Bytes 装载当前对象
-    fn read_from(&self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+    fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
 }
 
 /// 用于创建 共享指针
