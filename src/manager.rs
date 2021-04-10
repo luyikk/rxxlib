@@ -8,6 +8,7 @@ use std::collections::{HashMap, BTreeMap, HashSet, BTreeSet};
 use crate::data::Data;
 use crate::data_read::DataReader;
 use anyhow::*;
+use crate::StringAssign;
 
 lazy_static!{
     static ref TYPES:TypeClass={
@@ -66,21 +67,20 @@ impl ObjectManager{
     /// 写入入口函数
     #[inline]
     pub fn write_to<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
-        unsafe {
-
-            if value.is_null() {
-                panic!("write_to shared ptr not null")
-            } else {
-                self.write_sharedptr_entry(data, value);
-            }
-
-            let ptr = self.write_ptr_vec.get();
-            let len = (*ptr).len();
-            for i in 0..len {
-                (*ptr).as_mut_ptr().add(i).read().write(0);
-            }
-            (*ptr).clear();
+        if value.is_null() {
+            panic!("write_to shared ptr not null")
+        } else {
+            self.write_sharedptr_entry(data, value);
         }
+        let vec_ptr=self.write_ptr_vec.get();
+
+        unsafe {
+            for addr in &(*vec_ptr) {
+                addr.write(0);
+            }
+            (*vec_ptr).clear();
+        }
+
     }
 
     /// 生成物结构内部写入
@@ -92,13 +92,13 @@ impl ObjectManager{
     /// 写入共享指针入口
     #[inline]
     pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
+        let offset_addr =value.get_offset_addr();
         unsafe {
-            let offset_addr =value.get_offset_addr();
             (*self.write_ptr_vec.get()).push(offset_addr);
             offset_addr.write(1);
-            data.write_var_integer(&value.get_type_id());
-            self.write_ptr(data, value);
         }
+        data.write_var_integer(&value.get_type_id());
+        self.write_ptr(data, value);
     }
 
     /// 写入共享指针
@@ -125,14 +125,14 @@ impl ObjectManager{
     }
 
     /// 写指针
-    #[inline]
+    #[inline(always)]
     fn write_ptr<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         value.write_to(self,data)
     }
 
     /// 读SharedPtr<ISerde>
     #[inline]
-    pub fn read_from(&self,dr:DataReader)->Result<SharedPtr<dyn ISerde>>{
+    pub fn read_from(&self,dr:&mut DataReader)->Result<SharedPtr<dyn ISerde>>{
         unsafe {
             let r = self.read_ptr_first(dr);
             (*self.read_ptr_vec.get()).clear();
@@ -140,15 +140,18 @@ impl ObjectManager{
         }
     }
 
-    #[inline(always)]
-    fn read_ptr_first(&self,mut data:DataReader)->Result<SharedPtr<dyn ISerde>> {
+    #[inline]
+    fn read_ptr_first(&self,data:&mut DataReader)->Result<SharedPtr<dyn ISerde>> {
         let typeid: u16 = data.read_var_integer()?;
-        let ptr = ObjectManager::create(typeid).ok_or(anyhow!("not found typeid:{}",typeid))?;
-        unsafe {
-            (*self.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(self,&mut data)?;
+        if let Some(ptr) = ObjectManager::create(typeid) {
+            unsafe {
+                (*self.read_ptr_vec.get()).push(ptr.clone());
+                ptr.get_mut_ref().read_from(self, data)?;
+            }
+            Ok(ptr)
+        } else {
+            bail!("not found typeid:{}",typeid)
         }
-        Ok(ptr)
     }
 
     #[inline]
@@ -325,7 +328,7 @@ impl_iread_object_for_var!(i32);
 impl_iread_object_for_var!(u32);
 impl_iread_object_for_var!(i64);
 impl_iread_object_for_var!(u64);
-impl_iread_object_for_var!(String);
+
 macro_rules! impl_iread_inner_for_fixed {
     ($type:tt) => (
     impl IReadInner for $type{
@@ -361,18 +364,21 @@ fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, 
         if offset == len + 1 {
             let typeid = data.read_var_integer::<u16>()?;
             ensure!(typeid==T::type_id(),"read typeid:{} error,not type:{}",typeid,T::type_id());
-            let ptr = ObjectManager::create(typeid)
-                .ok_or(anyhow!("not found typeid:{}",typeid))?;
-            (*om.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(om, data)?;
-            Ok(ptr.cast::<T>()?)
+            if let Some(ptr) = ObjectManager::create(typeid) {
+                (*om.read_ptr_vec.get()).push(ptr.clone());
+                ptr.get_mut_ref().read_from(om, data)?;
+                Ok(ptr.cast::<T>()?)
+            }else{
+                bail!("not found typeid:{}",typeid)
+            }
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);
-            let ptr = (*om.read_ptr_vec.get()).get(offset - 1)
-                .ok_or(anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?
-                .clone();
-            ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
-            Ok(ptr.cast::<T>()?)
+            if let Some(ptr) = (*om.read_ptr_vec.get()).get(offset - 1) {
+                ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
+                Ok(ptr.clone().cast::<T>()?)
+            }else{
+               bail!("read type:{} offset error,not found offset:{}",T::type_id(),offset)
+            }
         }
     }
 }
@@ -394,14 +400,23 @@ impl <T:ISerde+'static> IReadInner for SharedPtr<T>{
 impl <T:ISerde+'static> IReadInner for Weak<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
-        let offset=data.read_var_integer::<u32>()? as usize;
-        if offset==0{
-            *self=Default::default();
-            return  Ok(())
+        let offset = data.read_var_integer::<u32>()? as usize;
+        if offset == 0 {
+            *self = Default::default();
+            return Ok(())
         }
-        *self= read_shared_ptr::<T>(om, data, offset)?
-            .weak()
-            .ok_or(anyhow!("shared ptr is null,type:{}",T::type_id()))?;
-        Ok(())
+        if let Some(ptr) = read_shared_ptr::<T>(om, data, offset)?.weak() {
+            *self = ptr;
+            Ok(())
+        } else {
+            bail!("shared ptr is null,type:{}",T::type_id())
+        }
+    }
+}
+
+impl IReadInner for String{
+    #[inline]
+    fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        Ok(self.assign(data.read_str()?))
     }
 }

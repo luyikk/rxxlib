@@ -7,9 +7,11 @@ use sharedptr::Rc::SharedPtr;
 use std::rc::Weak;
 use sharedptr::ISetNullWeak;
 use std::time::Instant;
+use std::fmt::Write;
+use xxlib::StringAssign;
 
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 struct Foo{
     __offset:u32,
     id:i32,
@@ -34,28 +36,19 @@ impl ISerde for Foo{
         Foo::type_id()
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_to(&self, om: &ObjectManager, data: &mut Data) {
         om.write_(data,&self.id);
         om.write_(data,&self.name);
-        // om.write_(data,&self.p);
-        // om.write_(data,&self.x);
     }
-    #[inline]
+    #[inline(always)]
     fn read_from(&mut self, om: &ObjectManager, data:&mut DataReader)->Result<()> {
         om.read_(data, &mut self.id)?;
         om.read_(data, &mut self.name)?;
-        // om.read_(data, &mut self.p)?;
-        // om.read_(data, &mut self.x)?;
         Ok(())
     }
 }
-impl Drop for Foo{
-    #[inline]
-    fn drop(&mut self) {
-        println!("foo is drop");
-    }
-}
+
 #[derive(Default)]
 struct Foo2{
     __offset:u32,
@@ -92,7 +85,7 @@ fn main()->Result<()> {
     ObjectManager::register::<Foo>(16);
     ObjectManager::register::<Foo2>(32);
 
-    let mut data = Data::with_capacity(100000000);
+    let mut data = Data::with_capacity(1000);
 
     let p = ObjectManager::new();
 
@@ -104,19 +97,39 @@ fn main()->Result<()> {
     // let mut foo2 = Foo2::default();
     // foo2.id = 1000;
 
-    let foo_ptr = SharedPtr::new(foo);
+   // let foo_ptr = SharedPtr::new(foo);
 
-    let start=Instant::now();
-    for _ in 0..10000000 {
+    for _ in 0..10 {
         data.clear();
-        p.write_to(&mut data, &foo_ptr);
+        let start = Instant::now();
+        for _ in 0..10000000i32 {
+           data.clear();
+            p.write_(&mut data, &foo);
+            //  data.write_var_integer(&foo.get_type_id());
+             // data.write_var_integer(&foo.id);
+             // data.write_var_integer(&foo.name);
+            //data.write_var_integer(&i);
+        }
+
+        println!("W {}", start.elapsed().as_secs_f32());
+
+        let start = Instant::now();
+
+
+        let mut dr = DataReader::from(&data[..]);
+        let mut f2=Foo::default();
+        for _ in 0..10000000 {
+            //x.read_var_integer::<i32>()?;
+            //dr.read_var_integer::<i32>()?;
+            //str.assign(dr.read_str()?);
+
+            p.read_(&mut dr,&mut f2)?;
+        }
+
+        println!("R {} {:?}", start.elapsed().as_secs_f32(),f2);
     }
 
-    println!("{}",start.elapsed().as_secs_f32());
-    // let x = p.read_from(DataReader::from(&data[..]))?;
-    // let f = x.cast::<Foo>()?;
-    //
-    // let x = f.p.upgrade().ok_or(anyhow!("11"))?;
+
 
 
 

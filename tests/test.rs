@@ -86,7 +86,7 @@ fn test_read()->Result<()>{
     let mut data=Data::new();
     data.write_var_integer(&"hello world");
     let mut data=DataReader::from(&data[..]);
-    let msg:String=data.read_var_integer()?;
+    let msg=data.read_str()?;
     assert_eq!(msg,"hello world");
     Ok(())
 }

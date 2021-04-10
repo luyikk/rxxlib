@@ -29,7 +29,7 @@ fn main()->Result<()> {
     assert_eq!(123, x);
     let x: i64 = data.read_var_integer()?;
     assert_eq!(321, x);
-    let msg: String = data.read_var_integer()?;
+    let msg = data.read_str()?;
     assert_eq!(msg, "hello world");
 
     Ok(())

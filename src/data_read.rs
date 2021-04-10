@@ -134,25 +134,17 @@ impl RNumberVar for i64{
     }
 }
 
-impl RNumberVar for String{
-    #[inline]
-    fn read(dr: &mut DataReader) -> Result<Self> where Self: Sized {
-        let len:u64= dr.read_var_integer()?;
-        let mut buff=vec![0;len as usize];
-        dr.read_buff(&mut buff[..])?;
-        Ok(String::from_utf8(buff)?)
-    }
-}
 
-#[inline]
+
+#[inline(always)]
 fn zig_zag_decode_i16(v: u16) -> i16 {
     ((v >> 1) as i16) ^ (-((v & 1) as i16))
 }
-#[inline]
+#[inline(always)]
 fn zig_zag_decode_i32(v: u32) -> i32 {
     ((v >> 1) as i32) ^ (-((v & 1) as i32))
 }
-#[inline]
+#[inline(always)]
 fn zig_zag_decode_i64(v: u64) -> i64 {
     ((v >> 1) as i64) ^ (-((v & 1) as i64))
 }
@@ -181,19 +173,19 @@ impl<'a> Deref for DataReader<'a>{
 
 
 impl <'a> DataReader<'a>{
-    #[inline]
+    #[inline(always)]
     pub fn advance(&mut self,cnt: usize)->Result<()>{
         ensure!(self.len() >= cnt,"advance error,cnt:{} > len:{}",cnt,self.len());
         self.buff=&self.buff[cnt..];
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn offset(&self)->usize{
         self.original_len.wrapping_sub(self.buff.len())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn read_buff(&mut self,buff:&mut [u8])->Result<()>{
         let size=buff.len();
         ensure!(self.len() >=size,"read buff,buff too max,current:{} input:{}",self.len(),size);
@@ -203,12 +195,36 @@ impl <'a> DataReader<'a>{
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
+    pub fn read_str(&mut self) ->Result<&'a str>{
+        let len= self.read_var_integer::<u64>()? as usize;
+        ensure!(len<=self.len(),"read string size too big,{}>{}",len,self.len());
+        unsafe {
+            //let str = std::str::from_utf8_unchecked(&self.buff[0..len]);
+           // self.advance(len)?;
+            let (res,have)=self.buff.split_at(len);
+            self.buff=have;
+            Ok(std::str::from_utf8_unchecked(res))
+        }
+    }
+
+    #[inline(always)]
+    pub fn read_buf(&mut self) ->Result<&'a [u8]>{
+        let len= self.read_var_integer::<u64>()? as usize;
+        ensure!(len<=self.len(),"read string size too big,{}>{}",len,self.len());
+        unsafe {
+            let (res,have)=self.buff.split_at(len);
+            self.buff=have;
+            Ok(res)
+        }
+    }
+
+    #[inline(always)]
     pub fn read_fixed<T:RNumberFixed>(&mut self)->Result<T>{
         T::read(self)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn read_var_integer<T:RNumberVar>(&mut self)->Result<T>{
         T::read(self)
     }

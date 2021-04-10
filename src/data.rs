@@ -154,15 +154,15 @@ impl WNumberVar for i64{
     }
 }
 
-#[inline]
+#[inline(always)]
 fn zig_zag_encode_u16(v: &i16) -> u16 {
     ((v << 1) ^ (v >> 15)) as u16
 }
-#[inline]
+#[inline(always)]
 fn zig_zag_encode_u32(v: &i32) -> u32 {
     ((v << 1) ^ (v >> 31)) as u32
 }
-#[inline]
+#[inline(always)]
 fn zig_zag_encode_u64(v: &i64) -> u64 {
     ((v << 1) ^ (v >> 63)) as u64
 }
@@ -209,7 +209,7 @@ impl Data{
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_buf(&mut self,buff:&[u8]){
         unsafe{
             let size=buff.len();
@@ -219,7 +219,7 @@ impl Data{
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_buf_at(&mut self,idx:usize,buff:&[u8])->Result<()>{
         let size=buff.len();
         ensure!(idx.wrapping_add(size)<=self.len(),"idx too max {}>{}",idx.wrapping_add(size),self.len());
@@ -229,22 +229,22 @@ impl Data{
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_fixed(&mut self,v:&impl WNumberFixed){
         v.write(self)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_fixed_at(&mut self, idx:usize, v:impl WNumberFixed) ->Result<()>{
         v.write_at(idx,self)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_var_integer(&mut self,v:&impl WNumberVar){
         v.write(self);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn check_reserve(&mut self, size:usize) ->usize{
         let len=self.len();
         if len>self.capacity().wrapping_sub(size){
@@ -273,7 +273,7 @@ impl DerefMut for Data{
 
 
 /// Given `u64` value compute varint encoded length.
-#[inline]
+#[inline(always)]
 pub fn compute_raw_varint64_size(value: u64) -> usize {
     if (value & (0xffffffffffffffffu64 << 7)) == 0 {
         return 1;
@@ -306,7 +306,7 @@ pub fn compute_raw_varint64_size(value: u64) -> usize {
 }
 
 /// Given `u32` value compute varint encoded length.
-#[inline]
+#[inline(always)]
 pub fn compute_raw_varint32_size(value: u32) -> usize {
     compute_raw_varint64_size(value as u64)
 }
