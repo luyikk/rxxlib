@@ -1,6 +1,6 @@
 use sharedptr::Rc::SharedPtr;
 use lazy_static::lazy_static;
-use crate::types::{TypeClass, ISerde, ISerdeCaseToType};
+use crate::types::{TypeClass, ISerde, ISerdeCaseToType, ITypeCaseToISerde};
 use std::rc::{Rc, Weak};
 use std::cell::{RefCell, Cell, UnsafeCell};
 use impl_trait_for_tuples::*;
@@ -9,6 +9,7 @@ use crate::data::Data;
 use crate::data_read::DataReader;
 use anyhow::*;
 use crate::StringAssign;
+use std::hash::Hash;
 
 lazy_static!{
     static ref TYPES:TypeClass={
@@ -27,6 +28,16 @@ pub trait IWriteInner{
 /// 用于筛选写入struct 字段
 pub trait IReadInner{
     fn read_(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+}
+
+///实现 最大50个类型元素的元组 读取
+#[impl_for_tuples(1,50)]
+impl IReadInner for TupleIdentifier{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        for_tuples!( #( TupleIdentifier.read_(om,data)?; )* );
+        Ok(())
+    }
 }
 
 
@@ -130,9 +141,10 @@ impl ObjectManager{
         value.write_to(self,data)
     }
 
+
     /// 读SharedPtr<ISerde>
     #[inline]
-    pub fn read_from(&self,dr:&mut DataReader)->Result<SharedPtr<dyn ISerde>>{
+    pub fn read_ptr(&self, dr:&mut DataReader) ->Result<SharedPtr<dyn ISerde>>{
         unsafe {
             let r = self.read_ptr_first(dr);
             (*self.read_ptr_vec.get()).clear();
@@ -143,15 +155,33 @@ impl ObjectManager{
     #[inline]
     fn read_ptr_first(&self,data:&mut DataReader)->Result<SharedPtr<dyn ISerde>> {
         let typeid: u16 = data.read_var_integer()?;
-        if let Some(ptr) = ObjectManager::create(typeid) {
-            unsafe {
-                (*self.read_ptr_vec.get()).push(ptr.clone());
-                ptr.get_mut_ref().read_from(self, data)?;
-            }
-            Ok(ptr)
-        } else {
-            bail!("not found typeid:{}",typeid)
+        let ptr = ObjectManager::create(typeid)
+            .ok_or_else(move ||anyhow!("typeid not found:{}",typeid))?;
+        unsafe {
+            (*self.read_ptr_vec.get()).push(ptr.clone());
+            ptr.get_mut_ref().read_from(self, data)?;
         }
+        Ok(ptr)
+    }
+
+    #[inline]
+    pub fn read_from<T:ISerde+'static>(&self,dr:&mut DataReader,ptr:&SharedPtr<T>)->Result<()>{
+        unsafe {
+            let r = self.read_from_first(dr,ptr);
+            (*self.read_ptr_vec.get()).clear();
+            r
+        }
+    }
+
+    #[inline]
+    fn read_from_first<T:ISerde+'static>(&self,data:&mut DataReader,ptr:&SharedPtr<T>)->Result<()> {
+        let typeid: u16 = data.read_var_integer()?;
+        ensure!(typeid==T::type_id(),"typeid error,{}!={}",typeid,T::type_id());
+        unsafe {
+            (*self.read_ptr_vec.get()).push(ptr.clone().un_cast());
+            ptr.get_mut_ref().read_from(self, data)?;
+        }
+        Ok(())
     }
 
     #[inline]
@@ -357,33 +387,27 @@ impl<T:ISerde> IReadInner for T{
     }
 }
 
-#[inline(always)]
+#[inline]
 fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, offset: usize)->Result<SharedPtr<T>> {
     unsafe {
         let len = (*om.read_ptr_vec.get()).len();
         if offset == len + 1 {
             let typeid = data.read_var_integer::<u16>()?;
             ensure!(typeid==T::type_id(),"read typeid:{} error,not type:{}",typeid,T::type_id());
-            if let Some(ptr) = ObjectManager::create(typeid) {
-                (*om.read_ptr_vec.get()).push(ptr.clone());
-                ptr.get_mut_ref().read_from(om, data)?;
-                Ok(ptr.cast::<T>()?)
-            }else{
-                bail!("not found typeid:{}",typeid)
-            }
+            let ptr = ObjectManager::create(typeid)
+                .ok_or_else(move || anyhow!("not found typeid:{}",typeid))?;
+            (*om.read_ptr_vec.get()).push(ptr.clone());
+            ptr.get_mut_ref().read_from(om, data)?;
+            Ok(ptr.cast::<T>()?)
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);
-            if let Some(ptr) = (*om.read_ptr_vec.get()).get(offset - 1) {
-                ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
-                Ok(ptr.clone().cast::<T>()?)
-            }else{
-               bail!("read type:{} offset error,not found offset:{}",T::type_id(),offset)
-            }
+            let ptr = (*om.read_ptr_vec.get()).get(offset - 1)
+                .ok_or_else(move || anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?;
+            ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
+            Ok(ptr.clone().cast::<T>()?)
         }
     }
 }
-
-
 impl <T:ISerde+'static> IReadInner for SharedPtr<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
@@ -396,7 +420,6 @@ impl <T:ISerde+'static> IReadInner for SharedPtr<T>{
         Ok(())
     }
 }
-
 impl <T:ISerde+'static> IReadInner for Weak<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
@@ -413,10 +436,91 @@ impl <T:ISerde+'static> IReadInner for Weak<T>{
         }
     }
 }
-
 impl IReadInner for String{
     #[inline]
     fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
         Ok(self.assign(data.read_str()?))
+    }
+}
+impl<T:IReadInner+ Default> IReadInner for Option<T>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        if data.read_fixed::<u8>()? == 0 {
+            *self = None
+        } else {
+            let mut x = T::default();
+            x.read_(om, data)?;
+            *self = Some(x)
+        }
+        Ok(())
+    }
+}
+impl <T:IReadInner+Default> IReadInner for Vec<T>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        let len=data.read_var_integer::<u32>()?;
+        self.clear();
+        for _ in 0..len {
+            let mut v=T::default();
+            v.read_(om,data)?;
+            self.push(v);
+        }
+        Ok(())
+    }
+}
+impl <K:IReadInner+Default+Eq+Hash,V:IReadInner+Default> IReadInner for HashMap<K,V>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        let len=data.read_var_integer::<u32>()?;
+        self.clear();
+        for _ in 0..len {
+            let mut k=K::default();
+            k.read_(om,data)?;
+            let mut v=V::default();
+            v.read_(om,data)?;
+            self.insert(k,v);
+        }
+        Ok(())
+    }
+}
+impl <K:IReadInner+Default+Ord,V:IReadInner+Default> IReadInner for BTreeMap<K,V>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        let len=data.read_var_integer::<u32>()?;
+        self.clear();
+        for _ in 0..len {
+            let mut k=K::default();
+            k.read_(om,data)?;
+            let mut v=V::default();
+            v.read_(om,data)?;
+            self.insert(k,v);
+        }
+        Ok(())
+    }
+}
+impl <K:IReadInner+Default+Eq+Hash> IReadInner for HashSet<K>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        let len=data.read_var_integer::<u32>()?;
+        self.clear();
+        for _ in 0..len {
+            let mut k=K::default();
+            k.read_(om,data)?;
+            self.insert(k);
+        }
+        Ok(())
+    }
+}
+impl <K:IReadInner+Default+Ord> IReadInner for BTreeSet<K>{
+    #[inline]
+    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        let len=data.read_var_integer::<u32>()?;
+        self.clear();
+        for _ in 0..len {
+            let mut k=K::default();
+            k.read_(om,data)?;
+            self.insert(k);
+        }
+        Ok(())
     }
 }
