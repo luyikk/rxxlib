@@ -16,23 +16,6 @@ lazy_static!{
     };
 }
 
-/// 用于清理写入 数据的时候产生的零时数据
-struct ClearWriteGuard<'a>{
-    ptr_vec:&'a mut Vec<*mut u32>
-}
-
-impl<'a> Drop for ClearWriteGuard<'a>{
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            for i in 0..self.ptr_vec.len() {
-                self.ptr_vec.as_mut_ptr().add(i).read().write(0);
-            }
-            self.ptr_vec.clear();
-        }
-    }
-}
-
 /// 用于筛选 struct 内部写入 的类型判断
 #[impl_for_tuples(1, 50)]
 pub trait IWriteInner{
@@ -84,9 +67,7 @@ impl ObjectManager{
     #[inline]
     pub fn write_to<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
-            // let _hot = ClearWriteGuard {
-            //     ptr_vec: &mut *self.write_ptr_vec.get()
-            // };
+
             if value.is_null() {
                 panic!("write_to shared ptr not null")
             } else {
@@ -112,9 +93,9 @@ impl ObjectManager{
     #[inline]
     pub(crate) fn write_sharedptr_entry<T:ISerde>(&self,data:&mut Data,value:&SharedPtr<T>){
         unsafe {
-            let offst_addr=value.get_offset_addr();
-            (*self.write_ptr_vec.get()).push(offst_addr);
-            offst_addr.write(1);
+            let offset_addr =value.get_offset_addr();
+            (*self.write_ptr_vec.get()).push(offset_addr);
+            offset_addr.write(1);
             data.write_var_integer(&value.get_type_id());
             self.write_ptr(data, value);
         }
