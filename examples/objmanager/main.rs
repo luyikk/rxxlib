@@ -112,7 +112,7 @@ fn main()->Result<()> {
     for _ in 0..10 {
         data.clear();
         let start = Instant::now();
-        for _ in 0..100i32 {
+        for _ in 0..10000000i32 {
           // data.clear();
            // p.write_to(&mut data, &foo_ptr);
             //  data.write_var_integer(&foo.get_type_id());
@@ -128,7 +128,7 @@ fn main()->Result<()> {
 
         let mut dr = DataReader::from(&data[..]);
         let mut t:(i32,String)=Default::default();
-        for _ in 0..100 {
+        for _ in 0..10000000 {
             //x.read_var_integer::<i32>()?;
             //dr.read_var_integer::<i32>()?;
             //str.assign(dr.read_str()?);

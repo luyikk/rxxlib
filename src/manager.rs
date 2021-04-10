@@ -19,7 +19,7 @@ lazy_static!{
 }
 
 /// 用于筛选 struct 内部写入 的类型判断
-#[impl_for_tuples(1, 50)]
+#[impl_for_tuples(0, 50)]
 pub trait IWriteInner{
     fn write_(&self,om:&ObjectManager,data:&mut Data);
 }
@@ -31,7 +31,7 @@ pub trait IReadInner{
 }
 
 ///实现 最大50个类型元素的元组 读取
-#[impl_for_tuples(1,50)]
+#[impl_for_tuples(0,50)]
 impl IReadInner for TupleIdentifier{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
