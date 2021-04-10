@@ -184,7 +184,7 @@ impl ObjectManager{
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn read_<T:IReadInner>(&self, data:&mut DataReader, v: &mut T) ->Result<()>{
         v.read_(self,data)
     }
@@ -437,7 +437,7 @@ impl <T:ISerde+'static> IReadInner for Weak<T>{
     }
 }
 impl IReadInner for String{
-    #[inline]
+    #[inline(always)]
     fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
         Ok(self.assign(data.read_str()?))
     }

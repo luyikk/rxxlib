@@ -28,11 +28,11 @@ impl ISerdeTypeId for Foo{
 }
 
 impl ISerde for Foo{
-    #[inline]
+    #[inline(always)]
     fn get_offset_addr(&self) -> *mut u32 {
         &self.__offset as * const u32 as *mut u32
     }
-    #[inline]
+    #[inline(always)]
     fn get_type_id(&self) -> u16 {
         Foo::type_id()
     }
@@ -107,7 +107,7 @@ fn main()->Result<()> {
     // foo.p=foo.x.weak().ok_or_else(||anyhow!("is none"))?;
     // foo.m.push(foo.x.clone());
 
-    let mut foo_ptr = SharedPtr::new(foo);
+    //let mut foo_ptr = SharedPtr::new(foo);
 
     for _ in 0..10 {
         data.clear();
@@ -120,6 +120,7 @@ fn main()->Result<()> {
              // data.write_var_integer(&foo.name);
             //data.write_var_integer(&i);
             p.write_(&mut data,&(1,"123123"));
+           // p.write_(&mut data, &foo);
         }
 
         println!("W {}", start.elapsed().as_secs_f32());
@@ -135,10 +136,11 @@ fn main()->Result<()> {
 
             //foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
            // p.read_from(&mut dr,&foo_ptr)?;
-            p.read_(&mut dr,&mut t);
+           p.read_(&mut dr,&mut t)?;
+           // p.read_(&mut dr,&mut foo)?;
         }
 
-        println!("R {} {}", start.elapsed().as_secs_f32(),t.1);
+        println!("R {}", start.elapsed().as_secs_f32());
     }
 
     Ok(())
