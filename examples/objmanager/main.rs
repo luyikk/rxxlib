@@ -1,23 +1,21 @@
 // use xxlib::manager::ObjectManager;
 // use anyhow::*;
-// use xxlib::types::{ISerde, ISerdeTypeId, ISerdeCaseToType};
+// use xxlib::types::{ISerde, ISerdeTypeId, ISerdeCaseToType, ITypeCaseToISerde};
 // use xxlib::data::Data;
 // use xxlib::data_read::DataReader;
 // use sharedptr::Rc::SharedPtr;
 // use std::rc::Weak;
 // use sharedptr::ISetNullWeak;
 // use std::time::Instant;
-// use xxlib::StringAssign;
+// use  xxlib::StringAssign;
+//
 //
 //
 // #[derive(Default)]
 // struct Foo{
 //     __offset:u32,
 //     id:i32,
-//     name:String,
-//     // p:Weak<Foo2>,
-//     // x:SharedPtr<Foo2>,
-//     // m:Vec<SharedPtr<Foo2>>
+//     name:String
 // }
 //
 //
@@ -89,61 +87,75 @@
 // }
 //
 //
-// fn main()->Result<()> {
-//     ObjectManager::register::<Foo>();
-//     ObjectManager::register::<Foo2>();
+//  fn main() ->Result<()> {
 //
-//     let mut data = Data::with_capacity(1000);
+//      // let mut foo=Foo::default();
+//      // foo.name="123123".to_string();
+//      // foo.id=100;
 //
-//     let p = ObjectManager::new();
 //
-//     let mut foo = Foo::default();
-//     foo.id = 100;
-//     foo.name = "111111".to_string();
-//     // foo.p.set_null();
-//     // foo.x.set_null();
-//     // let mut foo2 = Foo2::default();
-//     // foo2.id = 1000;
-//     // foo.x=SharedPtr::new(foo2);
-//     // foo.p=foo.x.weak().ok_or_else(||anyhow!("is none"))?;
-//     // foo.m.push(foo.x.clone());
+//      // ObjectManager::register::<Foo>();
+//      // ObjectManager::register::<Foo2>();
+//      //
+//      // let mut data = Data::with_capacity(1000);
+//      //
+//      // let p = ObjectManager::new();
+//      //
+//      // let mut foo = Foo::default();
+//      // foo.id = 100;
+//      //
+//      //  let vec=vec![foo as ISerde];
+//      //
+//      // println!("{}", std::mem::size_of_val(&foo));
 //
-//     let mut foo_ptr = SharedPtr::new(foo);
 //
-//     for _ in 0..10 {
-//         data.clear();
-//         let start = Instant::now();
-//         for _ in 0..10000i32 {
-//           // data.clear();
-//             p.write_to(&mut data, &foo_ptr);
-//             //  data.write_var_integer(&foo.get_type_id());
-//              // data.write_var_integer(&foo.id);
-//              // data.write_var_integer(&foo.name);
-//             //data.write_var_integer(&i);
-//            // p.write_(&mut data,&(1,"123123"));
-//            // p.write_(&mut data, &foo);
-//         }
+//      // foo.name = "111111".to_string();
 //
-//         println!("W {}", start.elapsed().as_secs_f32());
 //
-//         let start = Instant::now();
+//      // foo.p.set_null();
+//      // foo.x.set_null();
+//      // let mut foo2 = Foo2::default();
+//      // foo2.id = 1000;
+//      // foo.x=SharedPtr::new(foo2);
+//      // foo.p=foo.x.weak().ok_or_else(||anyhow!("is none"))?;
+//      // foo.m.push(foo.x.clone());
 //
-//         let mut dr = DataReader::from(&data[..]);
-//         //let mut t:(i32,String)=Default::default();
-//         for _ in 0..10000 {
-//             //x.read_var_integer::<i32>()?;
-//             //dr.read_var_integer::<i32>()?;
-//             //str.assign(dr.read_str()?);
+//      // let mut foo_ptr = SharedPtr::new(foo);
+//      //
+//      // for _ in 0..10 {
+//      //     data.clear();
+//      //     let start = Instant::now();
+//      //     for _ in 0..10000i32 {
+//      //       // data.clear();
+//      //         p.write_to(&mut data, &foo_ptr);
+//      //         //  data.write_var_integer(&foo.get_type_id());
+//      //          // data.write_var_integer(&foo.id);
+//      //          // data.write_var_integer(&foo.name);
+//      //         //data.write_var_integer(&i);
+//      //        // p.write_(&mut data,&(1,"123123"));
+//      //        // p.write_(&mut data, &foo);
+//      //     }
+//      //
+//      //     println!("W {}", start.elapsed().as_secs_f32());
+//      //
+//      //     let start = Instant::now();
+//      //
+//      //     let mut dr = DataReader::from(&data[..]);
+//      //     //let mut t:(i32,String)=Default::default();
+//      //     for _ in 0..10000 {
+//      //         //x.read_var_integer::<i32>()?;
+//      //         //dr.read_var_integer::<i32>()?;
+//      //         //str.assign(dr.read_str()?);
+//      //
+//      //        // foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
+//      //         p.read_from(&mut dr,&foo_ptr)?;
+//      //       // p.read_(&mut dr,&mut t)?;
+//      //        // p.read_(&mut dr,&mut foo)?;
+//      //     }
+//      //
+//      //     println!("R {}", start.elapsed().as_secs_f32());
+//      // }
 //
-//            // foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
-//             p.read_from(&mut dr,&foo_ptr)?;
-//           // p.read_(&mut dr,&mut t)?;
-//            // p.read_(&mut dr,&mut foo)?;
-//         }
-//
-//         println!("R {}", start.elapsed().as_secs_f32());
-//     }
-//
-//     Ok(())
-// }
+//      Ok(())
+//  }
 fn main() {}

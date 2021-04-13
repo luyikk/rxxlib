@@ -1,10 +1,11 @@
-use xxlib::types::{ISerdeTypeId, ISerde, ISerdeCaseToType};
+use xxlib::types::{ISerdeTypeId, ISerde, ISerdeCaseToType, ITypeCaseToISerde};
 use xxlib::manager::ObjectManager;
 use xxlib::data::Data;
 use xxlib::data_read::DataReader;
 use anyhow::*;
 use sharedptr::Rc::SharedPtr;
 use std::rc::Weak;
+use std::any::Any;
 
 #[derive(Default,Debug,Clone)]
 struct Foo{
@@ -29,7 +30,7 @@ impl ISerde for Foo{
     }
     #[inline(always)]
     fn get_type_id(&self) -> u16 {
-        Foo::type_id()
+       Self::type_id()
     }
 
     #[inline(always)]
@@ -81,8 +82,12 @@ impl ISerde for Foo2{
     }
 }
 
+
+
 #[test]
 pub fn test()->Result<()>{
+
+
     ObjectManager::register::<Foo>();
     ObjectManager::register::<Foo2>();
     let mut foo=Foo::default();
@@ -109,6 +114,7 @@ pub fn test()->Result<()>{
     assert_eq!(foo2_ptr.base.id,ptr.base.id);
     assert_eq!(foo2_ptr.base.name,ptr.base.name);
     assert_eq!(foo2_ptr.id,ptr.base.child.upgrade().ok_or_else(||anyhow!("none"))?.id);
+
 
     Ok(())
 }

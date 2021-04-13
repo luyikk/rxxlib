@@ -23,6 +23,7 @@ pub trait ISerde:ISerdeTypeId{
     fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
 }
 
+
 /// 用于创建 共享指针
 pub type CreateFn=fn() -> SharedPtr<dyn ISerde>;
 

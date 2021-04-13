@@ -8,6 +8,12 @@ pub mod data_read;
 pub mod manager;
 pub mod types;
 
+pub use manager::ObjectManager;
+pub use data::Data;
+pub use data_read::DataReader;
+pub use types::{ISerdeTypeId, ISerde, ISerdeCaseToType};
+pub use sharedptr::Rc::SharedPtr;
+
 pub trait StringAssign{
     fn assign(&mut self,str:&str);
 }
@@ -19,3 +25,5 @@ impl StringAssign for String{
         self.push_str(str);
     }
 }
+
+
