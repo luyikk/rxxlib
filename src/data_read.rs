@@ -209,14 +209,12 @@ impl <'a> DataReader<'a>{
     }
 
     #[inline(always)]
-    pub fn read_buf(&mut self) ->Result<&'a [u8]>{
-        let len= self.read_var_integer::<u64>()? as usize;
+    pub fn read_buf(&mut self) ->Result<&'a [u8]> {
+        let len = self.read_var_integer::<u64>()? as usize;
         ensure!(len<=self.len(),"read string size too big,{}>{}",len,self.len());
-        unsafe {
-            let (res,have)=self.buff.split_at(len);
-            self.buff=have;
-            Ok(res)
-        }
+        let (res, have) = self.buff.split_at(len);
+        self.buff = have;
+        Ok(res)
     }
 
     #[inline(always)]

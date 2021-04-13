@@ -1,5 +1,7 @@
 #![feature(auto_traits)]
 #![feature(negative_impls)]
+#![feature(const_fn_fn_ptr_basics)]
+#![feature(const_fn)]
 
 pub mod data;
 pub mod data_read;

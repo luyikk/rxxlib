@@ -27,23 +27,18 @@ pub trait ISerde:ISerdeTypeId{
 pub type CreateFn=fn() -> SharedPtr<dyn ISerde>;
 
 /// 用于存储类型和TypeId的映射 实现根据Typeid 创建对象
-pub struct TypeClass{
-    register_table:UnsafeCell<Vec<Option<CreateFn>>>
+pub struct TypeClass<const LEN:usize>{
+    register_table:UnsafeCell<[Option<CreateFn>;LEN]>
 }
 
-unsafe impl Send for TypeClass{}
-unsafe impl Sync for TypeClass{}
+unsafe impl<const LEN:usize> Send for TypeClass<LEN>{}
+unsafe impl<const LEN:usize> Sync for TypeClass<LEN>{}
 
-impl TypeClass{
-    pub fn new()->Self {
-        let mut table:Vec<Option<CreateFn>>=Vec::with_capacity(65535);
-        for _ in 0..65535{
-            table.push(None);
+impl<const LEN:usize> TypeClass<LEN>{
+    pub const fn new()->Self {
+        TypeClass {
+            register_table:UnsafeCell::new([None;LEN])
         }
-        let tmp = TypeClass {
-            register_table:UnsafeCell::new(table)
-        };
-        tmp
     }
 
     /// 注册TypeId

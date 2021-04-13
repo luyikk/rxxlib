@@ -1,5 +1,4 @@
 use sharedptr::Rc::SharedPtr;
-use lazy_static::lazy_static;
 use crate::types::{TypeClass, ISerde, ISerdeCaseToType, ITypeCaseToISerde};
 use std::rc::{Rc, Weak};
 use std::cell::{RefCell, Cell, UnsafeCell};
@@ -11,12 +10,7 @@ use anyhow::*;
 use crate::StringAssign;
 use std::hash::Hash;
 
-lazy_static!{
-    static ref TYPES:TypeClass={
-        let types=TypeClass::new();
-        types
-    };
-}
+static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
 
 /// 用于筛选 struct 内部写入 的类型判断
 #[impl_for_tuples(0, 50)]
@@ -43,6 +37,7 @@ impl IReadInner for TupleIdentifier{
 
 pub auto trait NotU8{}
 impl !NotU8 for u8{}
+impl NotU8 for String{}
 
 /// PKG 序列化 反序列化 的实现
 #[derive(Default)]
@@ -62,8 +57,8 @@ impl ObjectManager{
 
     /// 注册 struct 和 Typeid 映射
     #[inline]
-    pub fn register<T:Default+ ISerde+'static>(typeid:u16){
-        TYPES.register(typeid,||{
+    pub fn register<T:Default+ ISerde+'static>(){
+        TYPES.register(T::type_id(),||{
             SharedPtr::from(Rc::new(T::default()) as Rc<dyn ISerde>)
         });
     }
@@ -266,6 +261,7 @@ impl_iwrite_inner_number_fixed!(u8);
 impl_iwrite_inner_number_fixed!(bool);
 impl_iwrite_inner_number_fixed!(f32);
 impl_iwrite_inner_number_fixed!(f64);
+
 impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) {
@@ -442,6 +438,16 @@ impl IReadInner for String{
         Ok(self.assign(data.read_str()?))
     }
 }
+
+impl IReadInner for Vec<u8>{
+    #[inline(always)]
+    fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        self.clear();
+        self.extend_from_slice(data.read_buf()?);
+        Ok(())
+    }
+}
+
 impl<T:IReadInner+ Default> IReadInner for Option<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
@@ -455,7 +461,8 @@ impl<T:IReadInner+ Default> IReadInner for Option<T>{
         Ok(())
     }
 }
-impl <T:IReadInner+Default> IReadInner for Vec<T>{
+
+impl <T:IReadInner+Default+NotU8> IReadInner for Vec<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
         let len=data.read_var_integer::<u32>()?;
