@@ -204,43 +204,47 @@ fn  impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
 }
 
 fn get_fmt_default(f: &Field,  x: NestedMeta) -> proc_macro2::TokenStream {
-    return if let NestedMeta::Lit(value) = x {
-        match value {
-            Lit::Int(v) => {
-                quote_spanned! {
+    return match x {
+            NestedMeta::Lit(value) => {
+                match value {
+                    Lit::Int(v) => {
+                        quote_spanned! {
                            f.span()=> #v
                         }
-            }
-            Lit::Float(v) => {
-                quote_spanned! {
+                    }
+                    Lit::Float(v) => {
+                        quote_spanned! {
                            f.span()=> #v
                         }
-            }
-            Lit::Bool(v) => {
-                quote_spanned! {
+                    }
+                    Lit::Bool(v) => {
+                        quote_spanned! {
                            f.span()=> #v
                         }
-            }
-            Lit::Char(v) => {
-                quote_spanned! {
+                    }
+                    Lit::Char(v) => {
+                        quote_spanned! {
                            f.span()=> #v
                         }
-            }
-            Lit::Str(v) => {
-                quote_spanned! {
+                    }
+                    Lit::Str(v) => {
+                        quote_spanned! {
                            f.span()=> #v.to_string()
                         }
-            }
-            _ => {
-                quote_spanned! {
+                    }
+                    _ => {
+                        quote_spanned! {
                            f.span()=> ::core::default::Default::default()
                         }
+                    }
+                }
+            },
+            NestedMeta::Meta(value) => {
+
+                quote_spanned! {
+                   f.span()=> #value
+                }
             }
         }
-    } else {
-        quote_spanned! {
-                   f.span()=> ::core::default::Default::default()
-                }
-    }
 }
 
