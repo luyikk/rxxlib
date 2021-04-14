@@ -11,7 +11,7 @@ pub enum Flags{
     C=3
 }
 
-#[build_enum(u8)]
+#[build_enum(u64)]
 pub enum Flags2{
     N=0,
     A=1,
