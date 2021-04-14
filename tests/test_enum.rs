@@ -2,28 +2,22 @@ use anyhow::*;
 use xxlib::*;
 use xxlib_builder::*;
 
-#[repr(i32)]
-#[derive(Copy, Clone,Debug,Eq, PartialEq)]
+
+#[build_enum(i32)]
 pub enum Flags{
     N=0,
     A=1,
     B=2,
     C=3
 }
-impl_irw_inner_for_enum!(Flags;i32);
 
-
-
-#[derive(Copy, Clone,Debug,Eq, PartialEq)]
-#[repr(u8)]
+#[build_enum(u8)]
 pub enum Flags2{
     N=0,
     A=1,
     B=2,
     C=3
 }
-impl_irw_inner_for_enum!(Flags2;u8);
-
 
 
 #[derive(build,Debug)]

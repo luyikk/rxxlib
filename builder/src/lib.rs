@@ -1,6 +1,6 @@
-use quote::{quote, quote_spanned};
+use quote::{quote, quote_spanned,format_ident};
 use proc_macro::{TokenStream};
-use syn::{parse_macro_input, parse_quote, DeriveInput, NestedMeta, Lit, Field};
+use syn::{Data,parse_macro_input, parse_quote, DeriveInput, NestedMeta, Lit, Field};
 use proc_macro_roids::{DeriveInputStructExt, FieldExt, DeriveInputExt};
 use syn::spanned::Spanned;
 
@@ -248,3 +248,51 @@ fn get_fmt_default(f: &Field,  x: NestedMeta) -> proc_macro2::TokenStream {
         }
 }
 
+#[proc_macro_attribute]
+pub fn build_enum(args:TokenStream, input: TokenStream) -> TokenStream {
+    let number_type =  format_ident!("{}",args.to_string().trim());
+    let ast:syn::DeriveInput = syn::parse(input).unwrap();
+    let name=&ast.ident;
+    let expanded = if let Data::Enum(_) = ast.data {
+        quote! {
+             #[repr(#number_type)]
+             #[derive(Copy, Clone,Debug,Eq, PartialEq)]
+             #ast
+             impl xxlib::manager::IWriteInner for #name{
+                #[inline]
+                fn write_(&self, om: &ObjectManager, data: &mut Data) -> Result<()> {
+                    let v:#number_type=unsafe{
+                         std::mem::transmute(*self)
+                    };
+                    om.write_(data,&v)?;
+                    Ok(())
+                }
+            }
+            impl xxlib::manager::IReadInner for #name{
+                #[inline]
+                fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+                    let mut v:#number_type = 0;
+                    om.read_(data,&mut v)?;
+                    unsafe{
+                        *self=std::mem::transmute(v)
+                    }
+                    Ok(())
+                }
+            }
+            impl Default for #name{
+                #[inline]
+                fn default() -> Self {
+                    unsafe{
+                        std::mem::transmute::<#number_type,#name>(0)
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {
+            #ast
+        }
+    };
+
+    TokenStream::from(expanded)
+}
