@@ -124,7 +124,7 @@ impl WNumberVar for u32{
 impl WNumberVar for i32{
     #[inline]
     fn write(&self, data: &mut Data) {
-        WNumberVar::write(&mut zig_zag_encode_u32(self), data);
+        WNumberVar::write(&zig_zag_encode_u32(self), data);
     }
 }
 impl WNumberVar for u64{
@@ -171,7 +171,7 @@ impl WNumberVar for String{
     #[inline]
     fn write(&self, data: &mut Data) {
         let buff=self.as_bytes();
-        data.write_var_integer(&mut (buff.len() as u64));
+        data.write_var_integer(&(buff.len() as u64));
         data.write_buf(&buff);
     }
 }
@@ -179,7 +179,7 @@ impl WNumberVar for &str{
     #[inline]
     fn write(&self, data: &mut Data) {
         let buff=self.as_bytes();
-        data.write_var_integer(&mut (buff.len() as u64));
+        data.write_var_integer(&(buff.len() as u64));
         data.write_buf(&buff);
     }
 }

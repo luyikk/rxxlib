@@ -10,16 +10,16 @@ pub fn test_number()->Result<()>{
     let mut data=Data::new();
     let om=ObjectManager::new();
 
-    om.write_(&mut data,&1i8);
-    om.write_(&mut data,&2u8);
-    om.write_(&mut data,&1i16);
-    om.write_(&mut data,&2u16);
-    om.write_(&mut data,&1i32);
-    om.write_(&mut data,&2u32);
-    om.write_(&mut data,&1i64);
-    om.write_(&mut data,&2u64);
-    om.write_(&mut data,&1f32);
-    om.write_(&mut data,&2f64);
+    om.write_(&mut data,&1i8)?;
+    om.write_(&mut data,&2u8)?;
+    om.write_(&mut data,&1i16)?;
+    om.write_(&mut data,&2u16)?;
+    om.write_(&mut data,&1i32)?;
+    om.write_(&mut data,&2u32)?;
+    om.write_(&mut data,&1i64)?;
+    om.write_(&mut data,&2u64)?;
+    om.write_(&mut data,&1f32)?;
+    om.write_(&mut data,&2f64)?;
 
     let mut a:i8=0;
     let mut b:u8=0;
@@ -62,10 +62,10 @@ pub fn test_number()->Result<()>{
 pub fn test_buff()->Result<()>{
     let mut data=Data::new();
     let om=ObjectManager::new();
-    om.write_(&mut data,&"123123");
-    om.write_(&mut data,&vec![1,2,3,4,5]);
+    om.write_(&mut data,&"123123")?;
+    om.write_(&mut data,&vec![1,2,3,4,5])?;
     let x=[1u8,2,3,4,5];
-    om.write_(&mut data,&&x[..]);
+    om.write_(&mut data,&&x[..])?;
     let mut dr=DataReader::from(&data[..]);
     let mut str:String="".to_string();
     let mut buff1:Vec<u8>=Default::default();
@@ -83,7 +83,6 @@ pub fn test_buff()->Result<()>{
 
 #[derive(Default,Eq, PartialEq,Debug,Clone)]
 struct Foo{
-    __offset:u32,
     id:i32,
     name:String
 }
@@ -97,19 +96,17 @@ impl ISerdeTypeId for Foo{
 }
 
 impl ISerde for Foo{
-    #[inline(always)]
-    fn get_offset_addr(&self) -> *mut u32 {
-        &self.__offset as * const u32 as *mut u32
-    }
+
     #[inline(always)]
     fn get_type_id(&self) -> u16 {
         Foo::type_id()
     }
 
     #[inline]
-    fn write_to(&self, om: &ObjectManager, data: &mut Data) {
-        om.write_(data,&self.id);
-        om.write_(data,&self.name);
+    fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
+        om.write_(data,&self.id)?;
+        om.write_(data,&self.name)?;
+        Ok(())
     }
     #[inline]
     fn read_from(&mut self, om: &ObjectManager, data:&mut DataReader)->Result<()> {
@@ -121,7 +118,6 @@ impl ISerde for Foo{
 
 #[derive(Default,Eq, PartialEq,Debug,Clone)]
 struct Foo2{
-    __offset:u32,
     base:Foo,
     id:u64
 }
@@ -132,18 +128,16 @@ impl ISerdeTypeId for Foo2{
     }
 }
 impl ISerde for Foo2{
-    #[inline(always)]
-    fn get_offset_addr(&self) -> *mut u32 {
-        &self.__offset as * const u32 as *mut u32
-    }
+
     #[inline(always)]
     fn get_type_id(&self) -> u16 {
        Foo2::type_id()
     }
     #[inline]
-    fn write_to(&self, om: &ObjectManager, data: &mut Data) {
-        om.write_(data,&self.base);
-        om.write_(data,&self.id);
+    fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
+        om.write_(data,&self.base)?;
+        om.write_(data,&self.id)?;
+        Ok(())
     }
     #[inline]
     fn read_from(&mut self, om: &ObjectManager, data: &mut DataReader)->Result<()> {
@@ -163,7 +157,7 @@ pub fn test_struct()->Result<()>{
     foo.base=Foo::default();
     foo.base.id=100;
     foo.base.name="123123".into();
-    om.write_(&mut data,&foo);
+    om.write_(&mut data,&foo)?;
     let mut dr=DataReader::from( &data[..]);
     let mut foo_clone=Foo2::default();
     om.read_(&mut dr,&mut foo_clone)?;
@@ -185,7 +179,7 @@ pub fn test_collections()->Result<()>{
         foo.base.name = "123123".into();
 
         let p = vec![foo.clone(), foo.clone(), foo.clone(), foo];
-        om.write_(&mut data, &p);
+        om.write_(&mut data, &p)?;
         let mut dr = DataReader::from(&data[..]);
         let mut b: Vec<Foo2> = Default::default();
         om.read_(&mut dr, &mut b)?;
@@ -207,7 +201,7 @@ pub fn test_collections()->Result<()>{
         dict.insert(2,foo.clone());
         dict.insert(3,foo);
 
-        om.write_(&mut data, &dict);
+        om.write_(&mut data, &dict)?;
 
         let mut dr = DataReader::from(&data[..]);
         let mut b: HashMap<i32,Foo2> = Default::default();
@@ -230,7 +224,7 @@ pub fn test_collections()->Result<()>{
         dict.insert(2,foo.clone());
         dict.insert(3,foo);
 
-        om.write_(&mut data, &dict);
+        om.write_(&mut data, &dict)?;
 
         let mut dr = DataReader::from(&data[..]);
         let mut b: BTreeMap<i32,Foo2> = Default::default();
@@ -248,7 +242,7 @@ pub fn test_collections()->Result<()>{
         dict.insert(2);
         dict.insert(3);
 
-        om.write_(&mut data, &dict);
+        om.write_(&mut data, &dict)?;
 
         let mut dr = DataReader::from(&data[..]);
         let mut b: HashSet<i32> = Default::default();
@@ -266,7 +260,7 @@ pub fn test_collections()->Result<()>{
         dict.insert(2);
         dict.insert(3);
 
-        om.write_(&mut data, &dict);
+        om.write_(&mut data, &dict)?;
 
         let mut dr = DataReader::from(&data[..]);
         let mut b: BTreeSet<i32> = Default::default();

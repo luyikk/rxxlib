@@ -11,6 +11,7 @@ paste="1.0"
 anyhow = "1.0"
 sharedptr = {path="../shared_ptr"}
 impl-trait-for-tuples = "0.2"
+ordnung = "0.0.1"
 
 [dev-dependencies]
 xxlib_builder={path="./builder"}

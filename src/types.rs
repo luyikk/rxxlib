@@ -13,12 +13,10 @@ pub trait ISerdeTypeId{
 
 /// 序列化基本trait
 pub trait ISerde:ISerdeTypeId{
-    /// 获取指针偏移量 用于收发包
-    fn get_offset_addr(&self)->*mut u32;
     /// 获取type id
     fn get_type_id(&self)->u16;
     /// 写入当前对象 到 BytesMut
-    fn write_to(&self,om:&ObjectManager,data:&mut Data);
+    fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
     fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
 }
@@ -51,6 +49,7 @@ impl<const LEN:usize> TypeClass<LEN>{
 
     /// 根据typeid 创建对象
     #[inline]
+    #[allow(clippy::manual_map)]
     pub fn create(&self,typeid:u16)->Option<SharedPtr<dyn ISerde>>{
         unsafe {
             if let Some(ref f)=(*self.register_table.get())[typeid as usize]{
@@ -58,6 +57,7 @@ impl<const LEN:usize> TypeClass<LEN>{
             }else{
                 None
             }
+            //(*self.register_table.get())[typeid as usize].as_ref().map(|f| f())
         }
     }
 }
@@ -81,14 +81,18 @@ impl ISerdeCaseToType for SharedPtr<dyn ISerde> {
 }
 
 pub trait ITypeCaseToISerde{
+    /// # Safety
     /// 实现 SharedPtr<T> 到 SharePtr<dyn ISerde>的转换
-    fn un_cast(self)-> SharedPtr<dyn ISerde>;
+    /// 注意,如果不是SharePtr<dyn ISerde> cast Shardptr<T>
+    /// 那么如果 un_cast 将会出现不可预料的错误
+    unsafe fn un_cast(self)-> SharedPtr<dyn ISerde>;
 }
 
 impl<T:ISerde> ITypeCaseToISerde for SharedPtr<T>{
-    fn un_cast(self) -> SharedPtr<dyn ISerde> {
+     /// # Safety
+     unsafe fn un_cast(self) -> SharedPtr<dyn ISerde> {
         let ptr = &self as *const SharedPtr<T> as *const SharedPtr<dyn ISerde>;
         std::mem::forget(self);
-        unsafe { ptr.read() }
+        ptr.read()
     }
 }

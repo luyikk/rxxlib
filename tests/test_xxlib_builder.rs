@@ -2,9 +2,8 @@ use xxlib_builder::*;
 
 
 #[derive(build,Debug)]
-#[cmd(typeid(106))]
+#[cmd(typeid(106),compatible(true))]
 pub struct Foo{
-    __offset:u32,
     #[cmd(default(10))]
     id:i32,
     #[cmd(default("123123"))]
@@ -15,8 +14,8 @@ pub struct Foo{
 #[derive(build,Debug)]
 #[cmd(typeid(107))]
 struct Foo2{
-    __offset:u32,
     base:sharedptr::Rc::SharedPtr<Foo>,
+    #[cmd(default(100))]
     id:u64
 }
 
@@ -51,7 +50,7 @@ pub fn test()->anyhow::Result<()>{
     let mut data=Data::new();
     let om=ObjectManager::new();
 
-    om.write_to(&mut data,&foo2_ptr);
+    om.write_to(&mut data,&foo2_ptr)?;
     let mut dr=DataReader::from( &data[..]);
     let ptr= om.read_ptr(&mut dr)?.cast::<Foo2>()?;
 
