@@ -12,7 +12,7 @@ pub fn make(input :TokenStream)->TokenStream{
     impl_default(&derive_input)
 }
 
-fn  impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
+fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
     let name = &derive_input.ident;
     let typeid={
         match derive_input.tag_parameter(&parse_quote!(cmd), &parse_quote!(typeid)).unwrap(){
