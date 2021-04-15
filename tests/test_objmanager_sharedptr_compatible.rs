@@ -16,14 +16,13 @@ impl ISerdeTypeId for Foo{
     fn type_id() -> u16 where Self: Sized {
         16
     }
+    #[inline(always)]
+    fn get_type_id(&self) -> u16 {
+        Self::type_id()
+    }
 }
 
 impl ISerde for Foo{
-
-    #[inline(always)]
-    fn get_type_id(&self) -> u16 {
-       Self::type_id()
-    }
 
     #[inline(always)]
     fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
@@ -71,13 +70,13 @@ impl ISerdeTypeId for Foo2{
     fn type_id() -> u16 where Self: Sized {
         32
     }
-}
-impl ISerde for Foo2{
-
     #[inline(always)]
     fn get_type_id(&self) -> u16 {
         Foo2::type_id()
     }
+}
+impl ISerde for Foo2{
+
     #[inline(always)]
     fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
         om.write_(data,&self.base)?;

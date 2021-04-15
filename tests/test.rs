@@ -1,3 +1,5 @@
+mod test_model;
+
 use anyhow::Result;
 use xxlib::data::Data;
 use xxlib::data_read::DataReader;

@@ -1,36 +1,36 @@
-use xxlib_builder::*;
-use xxlib::*;
+pub mod test {
+    use xxlib_builder::*;
+    use xxlib::*;
 
-#[derive(build,Debug)]
-#[cmd(typeid(106),compatible(true))]
-pub struct Foo{
-    #[cmd(default(10))]
-    id:i32,
-    #[cmd(default("123123"))]
-    name:String,
-    child:Weak<Foo2>
+    #[derive(build, Debug)]
+    #[cmd(typeid(106), compatible(true))]
+    pub struct Foo {
+        #[cmd(default(10))]
+        pub id: i32,
+        #[cmd(default("123123"))]
+        pub name: String,
+        pub child: Weak<Foo2>
+    }
+
+    #[derive(build, Debug)]
+    #[cmd(typeid(107))]
+    pub struct Foo2 {
+        pub base: SharedPtr<Foo>,
+        #[cmd(default(100))]
+        pub id: u64
+    }
+
+
+    pub fn register_pkg_objs() {
+        xxlib::ObjectManager::register::<Foo>();
+        xxlib::ObjectManager::register::<Foo2>();
+    }
 }
-
-#[derive(build,Debug)]
-#[cmd(typeid(107))]
-struct Foo2{
-    base:SharedPtr<Foo>,
-    #[cmd(default(100))]
-    id:u64
-}
-
-
-pub fn register_pkg_objs(){
-    xxlib::ObjectManager::register::<Foo>();
-    xxlib::ObjectManager::register::<Foo2>();
-}
-
-
 
 #[test]
 pub fn test()->anyhow::Result<()>{
     use xxlib::*;
-
+    use test::*;
     register_pkg_objs();
 
     let mut foo=Foo::default();

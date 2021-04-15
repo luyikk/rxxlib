@@ -50,7 +50,6 @@ impl IReadInner for TupleIdentifier{
     }
 }
 
-
 pub auto trait NotU8{}
 impl !NotU8 for u8{}
 impl NotU8 for String{}
@@ -516,6 +515,7 @@ impl <T:IReadInner+Default+NotU8> IReadInner for Vec<T>{
         Ok(())
     }
 }
+
 impl <K:IReadInner+Default+Eq+Hash,V:IReadInner+Default> IReadInner for HashMap<K,V>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
@@ -572,3 +572,4 @@ impl <K:IReadInner+Default+Ord> IReadInner for BTreeSet<K>{
         Ok(())
     }
 }
+

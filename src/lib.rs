@@ -8,10 +8,11 @@ pub mod data_read;
 pub mod manager;
 pub mod types;
 
-pub use manager::ObjectManager;
+pub use manager::{ObjectManager,IReadInner,IWriteInner};
 pub use data::Data;
 pub use data_read::DataReader;
-pub use types::{ISerdeTypeId, ISerde, ISerdeCaseToType};
+pub use types::{ISerdeTypeId, ISerde, IStruct,ISerdeCaseToType};
+
 #[cfg(not(feature ="Arc"))]
 pub use sharedptr::Rc::SharedPtr;
 #[cfg(not(feature ="Arc"))]

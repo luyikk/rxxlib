@@ -15,18 +15,24 @@ pub fn make(input :TokenStream)->TokenStream{
 fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
     let name = &derive_input.ident;
     let typeid={
-        match derive_input.tag_parameter(&parse_quote!(cmd), &parse_quote!(typeid)).unwrap(){
-            NestedMeta::Lit(value)=>{
+        match derive_input.tag_parameter(&parse_quote!(cmd), &parse_quote!(typeid)){
+            Some(value)=> {
                 match value {
-                    Lit::Int(v)=>{
-                        v.to_string().parse::<u16>().expect("typeid type error not u16")
+                    NestedMeta::Lit(value) => {
+                        match value {
+                            Lit::Int(v) => {
+                                Some(v.to_string().parse::<u16>().expect("typeid type error not u16"))
+                            },
+                            _ => panic!("typeid type error not u16")
+                        }
                     },
-                    _=>panic!("typeid type error not u16")
+                    _=>panic!("typeid type error")
                 }
             },
-            _=>panic!("typeid error")
+            _=>None
         }
     };
+
 
     let is_compatible= match derive_input.tag_parameter(&parse_quote!(cmd), &parse_quote!(compatible)){
         Some(p)=>{
@@ -45,13 +51,14 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
         None=>false
     };
 
-
     let write= derive_input.fields().iter().filter(|f|{!f.is_phantom_data()}).map(|f|{
         let name=&f.ident;
-        quote_spanned!{
-                   f.span()=>  om.write_(data,&self.#name)?;
-                }
+        quote_spanned! {
+            f.span()=>  om.write_(data,&self.#name)?;
+        }
+
     });
+
 
     let defs=  derive_input.fields().iter().filter(|f|{!f.is_phantom_data()}).map(|f|{
         let name=&f.ident;
@@ -75,55 +82,99 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
             let name = &f.ident;
             quote_spanned! {
                    f.span()=>  om.read_(data, &mut self.#name)?;
-                }
+            }
         });
 
-        let expanded = quote! {
-            impl xxlib::ISerdeTypeId for #name{
-                #[inline(always)]
-                fn type_id() -> u16 where Self: Sized {
-                    #typeid
-                }
-            }
-            impl xxlib::ISerde for #name {
-                #[inline]
-                fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
-                    #( #write)*
-                    Ok(())
-                }
-                #[inline]
-                fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
-                    #( #read)*
-                    Ok(())
-                }
-                #[inline]
-                fn get_type_id(&self) -> u16 {
-                   use xxlib::ISerdeTypeId;
-                   Self::type_id()
-                }
-            }
-
-
-            #[automatically_derived]
-            #[allow(unused_qualifications)]
-            impl ::core::default::Default for #name {
-                #[inline]
-                fn default() -> #name {
-                    #name {
-                          #( #defs)*
+        if let Some(typeid)=typeid {
+            let expanded = quote! {
+                impl xxlib::ISerdeTypeId for #name{
+                    #[inline(always)]
+                    fn type_id() -> u16 where Self: Sized {
+                        #typeid
+                    }
+                    #[inline]
+                    fn get_type_id(&self) -> u16 {
+                       use xxlib::ISerdeTypeId;
+                       Self::type_id()
                     }
                 }
-            }
-
-            impl ToString for #name{
-                #[inline]
-                fn to_string(&self) -> String {
-                     format!("{:?}",self)
+                impl xxlib::ISerde for #name {
+                    #[inline]
+                    fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
+                        #( #write)*
+                        Ok(())
+                    }
+                    #[inline]
+                    fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
+                        #( #read)*
+                        Ok(())
+                    }
                 }
-            }
-    };
+                #[automatically_derived]
+                #[allow(unused_qualifications)]
+                impl ::core::default::Default for #name {
+                    #[inline]
+                    fn default() -> #name {
+                        #name {
+                              #( #defs)*
+                        }
+                    }
+                }
+                impl ToString for #name{
+                    #[inline]
+                    fn to_string(&self) -> String {
+                         format!("{:?}",self)
+                    }
+                }
+            };
 
-         TokenStream::from(expanded)
+            TokenStream::from(expanded)
+        }else {
+            let expanded = quote! {
+                impl xxlib::IStruct for #name {
+                    #[inline]
+                    fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
+                        #( #write)*
+                        Ok(())
+                    }
+                    #[inline]
+                    fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
+                        #( #read)*
+                        Ok(())
+                    }
+                }
+                impl xxlib::IWriteInner for #name{
+                    #[inline]
+                    fn write_(&self, om: &ObjectManager, data: &mut Data) -> anyhow::Result<()> {
+                        self.write_to(om,data)
+                    }
+                }
+                impl xxlib::IReadInner for #name{
+                    #[inline]
+                    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> anyhow::Result<()> {
+                        self.read_from(om,data)
+                    }
+                }
+                #[automatically_derived]
+                #[allow(unused_qualifications)]
+                impl ::core::default::Default for #name {
+                    #[inline]
+                    fn default() -> #name {
+                        #name {
+                              #( #defs)*
+                        }
+                    }
+                }
+
+                impl ToString for #name{
+                    #[inline]
+                    fn to_string(&self) -> String {
+                         format!("{:?}",self)
+                    }
+                }
+            };
+            TokenStream::from(expanded)
+        }
     }else{
         let read = derive_input.fields().iter().filter(|f| { !f.is_phantom_data() }).map(|f| {
             let name = &f.ident;
@@ -145,61 +196,108 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                     }
                 }
         });
-
-        let expanded = quote! {
-            impl xxlib::ISerdeTypeId for #name{
-                #[inline(always)]
-                fn type_id() -> u16 where Self: Sized {
-                    #typeid
-                }
-            }
-            impl xxlib::ISerde for #name {
-                #[inline]
-                fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
-                    let bak=data.len();
-                    data.write_fixed(&0u32);
-                    #( #write)*
-                    data.write_fixed_at(bak,(data.len()-bak) as u32)?;
-                    Ok(())
-                }
-                #[inline]
-                fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
-                    let end_offset = data.read_fixed::<u32>()? as usize - 4usize;
-                    anyhow::ensure!(end_offset<=data.len(),"struct:'{}' read_from offset error end_offset:{} > have len:{}", core::any::type_name::<Self>(),end_offset,data.len());
-                    let mut read = xxlib::DataReader::from(&data[..end_offset]);
-                    #( #read)*
-                    data.advance(end_offset)?;
-                    Ok(())
-                }
-                #[inline]
-                fn get_type_id(&self) -> u16 {
-                   use xxlib::ISerdeTypeId;
-                   Self::type_id()
-                }
-            }
-
-
-            #[automatically_derived]
-            #[allow(unused_qualifications)]
-            impl ::core::default::Default for #name {
-                #[inline]
-                fn default() -> #name {
-                    #name {
-                          #( #defs)*
+        if let Some(typeid)=typeid {
+            let expanded = quote! {
+                impl xxlib::ISerdeTypeId for #name{
+                    #[inline(always)]
+                    fn type_id() -> u16 where Self: Sized {
+                        #typeid
+                    }
+                    #[inline]
+                    fn get_type_id(&self) -> u16 {
+                       use xxlib::ISerdeTypeId;
+                       Self::type_id()
                     }
                 }
-            }
-
-            impl ToString for #name{
-                #[inline]
-                fn to_string(&self) -> String {
-                     format!("{:?}",self)
+                impl xxlib::ISerde for #name {
+                    #[inline]
+                    fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
+                        let bak=data.len();
+                        data.write_fixed(&0u32);
+                        #( #write)*
+                        data.write_fixed_at(bak,(data.len()-bak) as u32)?;
+                        Ok(())
+                    }
+                    #[inline]
+                    fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
+                        let end_offset = data.read_fixed::<u32>()? as usize - 4usize;
+                        anyhow::ensure!(end_offset<=data.len(),"struct:'{}' read_from offset error end_offset:{} > have len:{}", core::any::type_name::<Self>(),end_offset,data.len());
+                        let mut read = xxlib::DataReader::from(&data[..end_offset]);
+                        #( #read)*
+                        data.advance(end_offset)?;
+                        Ok(())
+                    }
                 }
-            }
-    };
-
-        TokenStream::from(expanded)
-
+                #[automatically_derived]
+                #[allow(unused_qualifications)]
+                impl ::core::default::Default for #name {
+                    #[inline]
+                    fn default() -> #name {
+                        #name {
+                              #( #defs)*
+                        }
+                    }
+                }
+                impl ToString for #name{
+                    #[inline]
+                    fn to_string(&self) -> String {
+                         format!("{:?}",self)
+                    }
+                }
+            };
+            TokenStream::from(expanded)
+        }else {
+            let expanded = quote! {
+                impl xxlib::IStruct for #name {
+                    #[inline]
+                    fn write_to(&self,om: &xxlib::ObjectManager,data: &mut xxlib::Data)->anyhow::Result<()> {
+                        let bak=data.len();
+                        data.write_fixed(&0u32);
+                        #( #write)*
+                        data.write_fixed_at(bak,(data.len()-bak) as u32)?;
+                        Ok(())
+                    }
+                    #[inline]
+                    fn read_from(&mut self,om: &xxlib::ObjectManager, data:&mut xxlib::DataReader) -> anyhow::Result<()> {
+                        let end_offset = data.read_fixed::<u32>()? as usize - 4usize;
+                        anyhow::ensure!(end_offset<=data.len(),"struct:'{}' read_from offset error end_offset:{} > have len:{}", core::any::type_name::<Self>(),end_offset,data.len());
+                        let mut read = xxlib::DataReader::from(&data[..end_offset]);
+                        #( #read)*
+                        data.advance(end_offset)?;
+                        Ok(())
+                    }
+                }
+                impl xxlib::IWriteInner for #name{
+                    #[inline]
+                    fn write_(&self, om: &ObjectManager, data: &mut Data) -> anyhow::Result<()> {
+                        self.write_to(om,data)
+                    }
+                }
+                impl xxlib::IReadInner for #name{
+                    #[inline]
+                    fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> anyhow::Result<()> {
+                        self.read_from(om,data)
+                    }
+                }
+                #[automatically_derived]
+                #[allow(unused_qualifications)]
+                impl ::core::default::Default for #name {
+                    #[inline]
+                    fn default() -> #name {
+                        #name {
+                              #( #defs)*
+                        }
+                    }
+                }
+                impl ToString for #name{
+                    #[inline]
+                    fn to_string(&self) -> String {
+                         format!("{:?}",self)
+                    }
+                }
+            };
+            TokenStream::from(expanded)
+        }
     }
 }
 
@@ -296,3 +394,4 @@ pub fn build_enum(args:TokenStream, input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+

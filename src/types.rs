@@ -18,12 +18,20 @@ pub use std::sync::Arc;
 pub trait ISerdeTypeId{
     /// 返回当前TypeId
     fn type_id()->u16 where Self: Sized;
+    /// 获取type id
+    fn get_type_id(&self)->u16;
 }
 
 /// 序列化基本trait
 pub trait ISerde:ISerdeTypeId{
-    /// 获取type id
-    fn get_type_id(&self)->u16;
+    /// 写入当前对象 到 BytesMut
+    fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
+    /// 从Bytes 装载当前对象
+    fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+}
+
+/// 常规结构类型序列化反序列化接口
+pub trait IStruct{
     /// 写入当前对象 到 BytesMut
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
