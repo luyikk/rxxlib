@@ -90,19 +90,19 @@ impl ISerdeCaseToType for SharedPtr<dyn ISerde> {
 }
 
 pub trait ITypeCaseToISerde{
-    /// # Safety
     /// 实现 SharedPtr<T> 到 SharePtr<dyn ISerde>的转换
     /// 注意,如果不是SharePtr<dyn ISerde> cast Shardptr<T>
     /// 那么如果 un_cast 将会出现不可预料的错误
-    unsafe fn un_cast(self)-> SharedPtr<dyn ISerde>;
+    fn un_cast(self)-> SharedPtr<dyn ISerde>;
 }
 
 impl<T:ISerde+'static> ITypeCaseToISerde for SharedPtr<T>{
-     /// # Safety
-     unsafe fn un_cast(self) -> SharedPtr<dyn ISerde> {
+     fn un_cast(self) -> SharedPtr<dyn ISerde> {
          let ptr = &self as *const SharedPtr<T> as *const Rc<T>;
          std::mem::forget(self);
-         let rc = ptr.read() as Rc<dyn ISerde>;
-         SharedPtr::from(rc)
+         unsafe {
+             let rc = ptr.read() as Rc<dyn ISerde>;
+             SharedPtr::from(rc)
+         }
      }
 }
