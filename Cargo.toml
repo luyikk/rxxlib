@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 paste="1.0"
 anyhow = "1.0"
-sharedptr = {path="../shared_ptr"}
+sharedptr = "0.2"
 impl-trait-for-tuples = "0.2"
 ordnung = "0.0.1"
 
