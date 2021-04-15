@@ -18,7 +18,7 @@ pub struct Data{
 
 
 macro_rules! impl_number_fixed {
-    ($type:tt) => (
+    ($type:ty) => (
     impl WNumberFixed for $type{
         #[cfg(not(feature = "BigEndian"))]
         #[inline]

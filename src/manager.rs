@@ -253,7 +253,7 @@ impl<T:ISerde+Default> IWriteInner for T{
     }
 }
 macro_rules! impl_iwrite_inner_number_var {
-    ($type:tt) => (
+    ($type:ty) => (
     impl IWriteInner for $type{
         #[inline]
         fn write_(&self, _: &ObjectManager, data: &mut Data)->Result<()> {
@@ -277,7 +277,7 @@ impl IWriteInner for &str{
     }
 }
 macro_rules! impl_iwrite_inner_number_fixed {
-    ($type:tt) => (
+    ($type:ty) => (
         impl IWriteInner for $type{
             #[inline]
             fn write_(&self, _: &ObjectManager, data: &mut Data)->Result<()> {
@@ -330,7 +330,7 @@ impl IWriteInner for &[u8]{
     }
 }
 macro_rules! impl_iwrite_inner_for_mapset {
-    ($type:tt) =>(
+    ($type:ty) =>(
     impl <K:IWriteInner> IWriteInner for $type::<K>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
@@ -345,7 +345,7 @@ macro_rules! impl_iwrite_inner_for_mapset {
 impl_iwrite_inner_for_mapset!(HashSet);
 impl_iwrite_inner_for_mapset!(BTreeSet);
 macro_rules! impl_iwrite_inner_for_map {
-    ($type:tt) => (
+    ($type:ty) => (
     impl <K:IWriteInner,V:IWriteInner> IWriteInner for $type<K,V>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
@@ -378,7 +378,7 @@ impl <T:IWriteInner+Copy> IWriteInner for Cell<T>{
 ///                         reader
 ///
 macro_rules! impl_iread_object_for_var {
-    ($type:tt) => (
+    ($type:ty) => (
     impl IReadInner for $type{
         #[inline]
         fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
@@ -395,7 +395,7 @@ impl_iread_object_for_var!(i64);
 impl_iread_object_for_var!(u64);
 
 macro_rules! impl_iread_inner_for_fixed {
-    ($type:tt) => (
+    ($type:ty) => (
     impl IReadInner for $type{
         #[inline]
         fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
