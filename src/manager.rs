@@ -1,6 +1,4 @@
-use sharedptr::Rc::SharedPtr;
 use crate::types::{TypeClass, ISerde, ISerdeCaseToType};
-use std::rc::{Rc, Weak};
 use std::cell::{RefCell, Cell, UnsafeCell};
 use impl_trait_for_tuples::*;
 use std::collections::{HashMap, BTreeMap, HashSet, BTreeSet};
@@ -9,6 +7,17 @@ use crate::data_read::DataReader;
 use anyhow::*;
 use crate::StringAssign;
 use std::hash::Hash;
+
+
+#[cfg(not(feature ="Arc"))]
+pub use sharedptr::Rc::SharedPtr;
+#[cfg(not(feature ="Arc"))]
+use std::rc::{Rc, Weak};
+#[cfg(feature ="Arc")]
+pub use sharedptr::Arc::SharedPtr;
+#[cfg(feature ="Arc")]
+use std::sync::{Arc, Weak};
+
 
 static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
 
@@ -69,10 +78,20 @@ impl ObjectManager{
     }
 
     /// 注册 struct 和 Typeid 映射
+    #[cfg(not(feature ="Arc"))]
     #[inline]
     pub fn register<T:Default+ ISerde+'static>(){
         TYPES.register(T::type_id(),||{
             SharedPtr::from(Rc::new(T::default()) as Rc<dyn ISerde>)
+        });
+    }
+
+    /// 注册 struct 和 Typeid 映射
+    #[cfg(feature ="Arc")]
+    #[inline]
+    pub fn register<T:Default+ ISerde+'static>(){
+        TYPES.register(T::type_id(),||{
+            SharedPtr::from(Arc::new(T::default()) as Arc<dyn ISerde>)
         });
     }
 

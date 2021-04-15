@@ -12,7 +12,14 @@ pub use manager::ObjectManager;
 pub use data::Data;
 pub use data_read::DataReader;
 pub use types::{ISerdeTypeId, ISerde, ISerdeCaseToType};
+#[cfg(not(feature ="Arc"))]
 pub use sharedptr::Rc::SharedPtr;
+#[cfg(not(feature ="Arc"))]
+pub use std::rc::Weak;
+#[cfg(feature ="Arc")]
+pub use sharedptr::Arc::SharedPtr;
+#[cfg(feature ="Arc")]
+pub use std::sync::Weak;
 
 pub trait StringAssign{
     fn assign(&mut self,str:&str);

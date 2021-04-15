@@ -92,7 +92,7 @@ impl ISerde for Foo2{
      foo.name = "111111".to_string();
 
      let foo_ptr =SharedPtr::new(foo);
-    // let r_foo_ptr =ObjectManager::create(Foo::type_id()).ok_or_else(||anyhow!("none"))?;
+     let r_foo_ptr =ObjectManager::create(Foo::type_id()).ok_or_else(||anyhow!("none"))?;
 
      for _ in 0..10 {
          data.clear();
@@ -111,22 +111,22 @@ impl ISerde for Foo2{
          println!("W {}", start.elapsed().as_secs_f32());
 
 
-         // let start = Instant::now();
-         //
-         // let mut dr = DataReader::from(&data[..]);
-         // //let mut t:(i32,String)=Default::default();
-         // for _ in 0..10000000 {
-         //     //x.read_var_integer::<i32>()?;
-         //     //dr.read_var_integer::<i32>()?;
-         //     //str.assign(dr.read_str()?);
-         //
-         //     //foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
-         //     p.read_from(&mut dr,&r_foo_ptr)?;
-         //   // p.read_(&mut dr,&mut t)?;
-         //    // p.read_(&mut dr,&mut foo)?;
-         // }
-         //
-         // println!("R {}", start.elapsed().as_secs_f32());
+         let start = Instant::now();
+
+
+         //let mut t:(i32,String)=Default::default();
+         for _ in 0..10000000 {
+             //x.read_var_integer::<i32>()?;
+             //dr.read_var_integer::<i32>()?;
+             //str.assign(dr.read_str()?);
+             let mut dr = DataReader::from(&data[..]);
+            // foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
+             p.read_from(&mut dr,&r_foo_ptr)?;
+           // p.read_(&mut dr,&mut t)?;
+            // p.read_(&mut dr,&mut foo)?;
+         }
+
+         println!("R {}", start.elapsed().as_secs_f32());
      }
 
      Ok(())

@@ -1,9 +1,13 @@
-use sharedptr::Rc::SharedPtr;
 use anyhow::{Result};
 use std::cell::UnsafeCell;
 use crate::manager::ObjectManager;
 use crate::data::Data;
 use crate::data_read::DataReader;
+
+#[cfg(not(feature ="Arc"))]
+pub use sharedptr::Rc::SharedPtr;
+#[cfg(feature ="Arc")]
+pub use sharedptr::Arc::SharedPtr;
 
 /// 用于给类型返回TypeId
 pub trait ISerdeTypeId{

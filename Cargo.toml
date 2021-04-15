@@ -19,6 +19,7 @@ xxlib_builder={path="./builder"}
 [features]
 default=[]
 BigEndian = []
+Arc=[]
 
 [profile.release]
 lto = "fat"

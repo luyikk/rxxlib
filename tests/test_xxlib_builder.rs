@@ -1,5 +1,5 @@
 use xxlib_builder::*;
-
+use xxlib::*;
 
 #[derive(build,Debug)]
 #[cmd(typeid(106),compatible(true))]
@@ -8,13 +8,13 @@ pub struct Foo{
     id:i32,
     #[cmd(default("123123"))]
     name:String,
-    child:std::rc::Weak<Foo2>
+    child:Weak<Foo2>
 }
 
 #[derive(build,Debug)]
 #[cmd(typeid(107))]
 struct Foo2{
-    base:sharedptr::Rc::SharedPtr<Foo>,
+    base:SharedPtr<Foo>,
     #[cmd(default(100))]
     id:u64
 }
@@ -29,7 +29,6 @@ pub fn register_pkg_objs(){
 
 #[test]
 pub fn test()->anyhow::Result<()>{
-    use sharedptr::Rc::SharedPtr;
     use xxlib::*;
 
     register_pkg_objs();
