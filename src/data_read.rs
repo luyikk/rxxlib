@@ -12,7 +12,7 @@ pub trait RNumberVar{
 }
 
 macro_rules! impl_read_number_fixed {
-    ($type:ty) => (
+    ($type:tt) => (
     impl RNumberFixed for $type{
         #[cfg(not(feature = "BigEndian"))]
         #[inline]

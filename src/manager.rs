@@ -330,7 +330,7 @@ impl IWriteInner for &[u8]{
     }
 }
 macro_rules! impl_iwrite_inner_for_mapset {
-    ($type:ty) =>(
+    ($type:tt) =>(
     impl <K:IWriteInner> IWriteInner for $type::<K>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
@@ -345,7 +345,7 @@ macro_rules! impl_iwrite_inner_for_mapset {
 impl_iwrite_inner_for_mapset!(HashSet);
 impl_iwrite_inner_for_mapset!(BTreeSet);
 macro_rules! impl_iwrite_inner_for_map {
-    ($type:ty) => (
+    ($type:tt) => (
     impl <K:IWriteInner,V:IWriteInner> IWriteInner for $type<K,V>{
         #[inline]
         fn write_(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
@@ -455,6 +455,8 @@ impl <T:ISerde+'static> IReadInner for SharedPtr<T>{
         Ok(())
     }
 }
+
+
 impl <T:ISerde+'static> IReadInner for Weak<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
