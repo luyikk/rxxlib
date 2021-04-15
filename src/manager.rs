@@ -1,4 +1,4 @@
-use crate::types::{TypeClass, ISerde, ISerdeCaseToType};
+use crate::types::{TypeClass, ISerde, ISerdeCaseToType, ITypeCaseToISerde};
 use std::cell::{RefCell, Cell, UnsafeCell};
 use impl_trait_for_tuples::*;
 use std::collections::{HashMap, BTreeMap, HashSet, BTreeSet};
@@ -187,7 +187,7 @@ impl ObjectManager{
     }
 
     #[inline]
-    pub fn read_from(&self,dr:&mut DataReader,ptr:&SharedPtr<dyn ISerde>)->Result<()>{
+    pub fn read_from<T:ISerde+'static>(&self,dr:&mut DataReader,ptr:&SharedPtr<T>)->Result<()>{
         unsafe {
             let r = self.read_from_first(dr,ptr);
             (*self.read_ptr_vec.get()).clear();
@@ -196,11 +196,11 @@ impl ObjectManager{
     }
 
     #[inline]
-    fn read_from_first(&self,data:&mut DataReader,ptr:&SharedPtr<dyn ISerde>)->Result<()> {
+    fn read_from_first<T:ISerde+'static>(&self,data:&mut DataReader,ptr:&SharedPtr<T>)->Result<()> {
         let typeid: u16 = data.read_var_integer()?;
         ensure!(typeid==ptr.get_type_id(),"typeid error,{}!={}",typeid,ptr.get_type_id());
         unsafe {
-            (*self.read_ptr_vec.get()).push(ptr.clone());
+            (*self.read_ptr_vec.get()).push(ptr.clone().un_cast());
             ptr.get_mut_ref().read_from(self, data)?;
         }
         Ok(())

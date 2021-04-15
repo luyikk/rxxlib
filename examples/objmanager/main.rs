@@ -2,7 +2,6 @@ use xxlib::manager::ObjectManager;
 use anyhow::*;
 use xxlib::*;
 use std::time::Instant;
-//use std::rc::Weak;
 
 
 #[derive(Default)]
@@ -24,7 +23,7 @@ impl ISerde for Foo{
 
     #[inline(always)]
     fn get_type_id(&self) -> u16 {
-        Foo::type_id()
+        Self::type_id()
     }
 
     #[inline(always)]
@@ -78,9 +77,9 @@ impl ISerde for Foo2{
 
  fn main() ->Result<()> {
 
-
      ObjectManager::register::<Foo>();
      ObjectManager::register::<Foo2>();
+
 
      let mut data = Data::with_capacity(100000000);
      let p = ObjectManager::new();
@@ -91,14 +90,13 @@ impl ISerde for Foo2{
      foo.id=100;
      foo.name = "111111".to_string();
 
-     let foo_ptr =SharedPtr::new(foo);
-     let r_foo_ptr =ObjectManager::create(Foo::type_id()).ok_or_else(||anyhow!("none"))?;
+     let  foo_ptr =SharedPtr::new(foo);
 
      for _ in 0..10 {
          data.clear();
          let start = Instant::now();
          for _ in 0..10000000i32 {
-             data.clear();
+             //data.clear();
              p.write_to(&mut data, &foo_ptr)?;
              //  data.write_var_integer(&foo.get_type_id());
               // data.write_var_integer(&foo.id);
@@ -113,15 +111,15 @@ impl ISerde for Foo2{
 
          let start = Instant::now();
 
-
+         let mut dr = DataReader::from(&data[..]);
          //let mut t:(i32,String)=Default::default();
          for _ in 0..10000000 {
              //x.read_var_integer::<i32>()?;
              //dr.read_var_integer::<i32>()?;
              //str.assign(dr.read_str()?);
-             let mut dr = DataReader::from(&data[..]);
+
             // foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
-             p.read_from(&mut dr,&r_foo_ptr)?;
+             p.read_from(&mut dr,&foo_ptr)?;
            // p.read_(&mut dr,&mut t)?;
             // p.read_(&mut dr,&mut foo)?;
          }

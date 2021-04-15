@@ -6,8 +6,13 @@ use crate::data_read::DataReader;
 
 #[cfg(not(feature ="Arc"))]
 pub use sharedptr::Rc::SharedPtr;
+#[cfg(not(feature ="Arc"))]
+pub use std::rc::Rc;
+
 #[cfg(feature ="Arc")]
 pub use sharedptr::Arc::SharedPtr;
+#[cfg(feature ="Arc")]
+pub use std::sync::Arc;
 
 /// 用于给类型返回TypeId
 pub trait ISerdeTypeId{
@@ -92,11 +97,12 @@ pub trait ITypeCaseToISerde{
     unsafe fn un_cast(self)-> SharedPtr<dyn ISerde>;
 }
 
-impl<T:ISerde> ITypeCaseToISerde for SharedPtr<T>{
+impl<T:ISerde+'static> ITypeCaseToISerde for SharedPtr<T>{
      /// # Safety
      unsafe fn un_cast(self) -> SharedPtr<dyn ISerde> {
-        let ptr = &self as *const SharedPtr<T> as *const SharedPtr<dyn ISerde>;
-        std::mem::forget(self);
-        ptr.read()
-    }
+         let ptr = &self as *const SharedPtr<T> as *const Rc<T>;
+         std::mem::forget(self);
+         let rc = ptr.read() as Rc<dyn ISerde>;
+         SharedPtr::from(rc)
+     }
 }
