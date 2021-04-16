@@ -1,4 +1,4 @@
-mod test_model;
+mod test_gen;
 use anyhow::Result;
 use xxlib::data::Data;
 use xxlib::data_read::DataReader;

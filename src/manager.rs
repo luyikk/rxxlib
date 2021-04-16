@@ -406,8 +406,37 @@ macro_rules! impl_iread_inner_for_fixed {
 }
 impl_iread_inner_for_fixed!(i8);
 impl_iread_inner_for_fixed!(u8);
-impl_iread_inner_for_fixed!(f32);
-impl_iread_inner_for_fixed!(f64);
+
+impl IReadInner for f32{
+    #[inline]
+    fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        *self=data.read_fixed()?;
+
+        if self.is_nan(){
+            bail!("NaN");
+        }
+        if self.is_infinite(){
+            bail!("INFINITY");
+        }
+        Ok(())
+    }
+}
+
+impl IReadInner for f64{
+    #[inline]
+    fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+        *self=data.read_fixed()?;
+        if self.is_nan(){
+            bail!("NaN");
+        }
+        if self.is_infinite(){
+            bail!("INFINITY");
+        }
+        Ok(())
+    }
+}
+
+
 impl IReadInner for bool{
     #[inline]
     fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
