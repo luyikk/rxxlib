@@ -1,6 +1,7 @@
 use xxlib::*;
 use xxlib_builder::*;
 
+
 /// Point
 #[allow(unused_imports,dead_code,non_snake_case,non_camel_case_types)]
 #[derive(build,Debug)]
@@ -68,6 +69,5 @@ pub struct Foo{
     pub Position:SharedPtr<PKG_P_Point>,
     pub Position2:SharedPtr<PKG_P_Point>,
     pub My:Weak<Foo>,
-    pub Positions:Vec<SharedPtr<PKG_P_Point>>
 }
 

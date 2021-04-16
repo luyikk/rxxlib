@@ -8,7 +8,7 @@ pub enum Flags{
     N=0,
     A=1,
     B=2,
-    C=3
+    C=3,
 }
 
 #[build_enum(u64)]

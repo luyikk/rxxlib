@@ -358,7 +358,7 @@ pub fn build_enum(args:TokenStream, input: TokenStream) -> TokenStream {
              #ast
              impl xxlib::manager::IWriteInner for #name{
                 #[inline]
-                fn write_(&self, om: &ObjectManager, data: &mut Data) -> Result<()> {
+                fn write_(&self, om: &ObjectManager, data: &mut Data) -> anyhow::Result<()> {
                     let v:#number_type=unsafe{
                          std::mem::transmute(*self)
                     };
@@ -368,7 +368,7 @@ pub fn build_enum(args:TokenStream, input: TokenStream) -> TokenStream {
             }
             impl xxlib::manager::IReadInner for #name{
                 #[inline]
-                fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
+                fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> anyhow::Result<()> {
                     let mut v:#number_type = 0;
                     om.read_(data,&mut v)?;
                     unsafe{
