@@ -1,7 +1,7 @@
 mod test_gen;
 use anyhow::Result;
-use xxlib::data::Data;
-use xxlib::data_read::DataReader;
+use xxlib::Data;
+use xxlib::DataReader;
 
 #[test]
 fn test_write()->Result<()>{
@@ -87,7 +87,7 @@ fn test_read()->Result<()>{
     let mut data=Data::new();
     data.write_var_integer(&"hello world");
     let mut data=DataReader::from(&data[..]);
-    let msg=data.read_str()?;
+    let msg=data.read_var_str()?;
     assert_eq!(msg,"hello world");
     Ok(())
 }

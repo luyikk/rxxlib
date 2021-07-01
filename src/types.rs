@@ -1,8 +1,8 @@
 use anyhow::{Result};
 use std::cell::UnsafeCell;
 use crate::manager::ObjectManager;
-use crate::data::Data;
-use crate::data_read::DataReader;
+use data_rw::Data;
+use data_rw::DataReader;
 
 #[cfg(not(feature ="Arc"))]
 pub use sharedptr::Rc::SharedPtr;

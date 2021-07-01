@@ -2,8 +2,8 @@ use crate::types::{TypeClass, ISerde, ISerdeCaseToType, ITypeCaseToISerde};
 use std::cell::{RefCell, Cell, UnsafeCell};
 use impl_trait_for_tuples::*;
 use std::collections::{HashMap, BTreeMap, HashSet, BTreeSet};
-use crate::data::Data;
-use crate::data_read::DataReader;
+use data_rw::Data;
+use data_rw::DataReader;
 use anyhow::*;
 use crate::StringAssign;
 use std::hash::Hash;
@@ -505,7 +505,7 @@ impl <T:ISerde+'static> IReadInner for Weak<T>{
 impl IReadInner for String{
     #[inline(always)]
     fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
-        self.assign(data.read_str()?);
+        self.assign(data.read_var_str()?);
         Ok(())
     }
 }
@@ -514,7 +514,7 @@ impl IReadInner for Vec<u8>{
     #[inline(always)]
     fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
         self.clear();
-        self.extend_from_slice(data.read_buf()?);
+        self.extend_from_slice(data.read_var_buf()?);
         Ok(())
     }
 }

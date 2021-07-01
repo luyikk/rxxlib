@@ -1,6 +1,6 @@
 use anyhow::Result;
-use xxlib::data::Data;
-use xxlib::data_read::DataReader;
+use data_rw::Data;
+use data_rw::DataReader;
 
 fn main()->Result<()> {
     let mut data = Data::new();
@@ -29,7 +29,7 @@ fn main()->Result<()> {
     assert_eq!(123, x);
     let x: i64 = data.read_var_integer()?;
     assert_eq!(321, x);
-    let msg = data.read_str()?;
+    let msg = data.read_var_str()?;
     assert_eq!(msg, "hello world");
 
     Ok(())

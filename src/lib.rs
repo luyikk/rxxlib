@@ -1,16 +1,15 @@
 #![feature(auto_traits)]
 #![feature(negative_impls)]
 #![feature(const_fn_fn_ptr_basics)]
-#![feature(const_fn)]
+#![feature(const_fn_trait_bound)]
 
-pub mod data;
-pub mod data_read;
 pub mod manager;
 pub mod types;
 
+pub use data_rw::Data;
+pub use data_rw::DataReader;
+
 pub use manager::{ObjectManager,IReadInner,IWriteInner};
-pub use data::Data;
-pub use data_read::DataReader;
 pub use types::{ISerdeTypeId, ISerde, IStruct,ISerdeCaseToType};
 
 #[cfg(not(feature ="Arc"))]
