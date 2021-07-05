@@ -105,6 +105,8 @@ pub trait ITypeCaseToISerde{
 }
 
 impl<T:ISerde+'static> ITypeCaseToISerde for SharedPtr<T>{
+     #[cfg(not(feature ="Arc"))]
+     #[inline]
      fn un_cast(self) -> SharedPtr<dyn ISerde> {
          let ptr = &self as *const SharedPtr<T> as *const Rc<T>;
          std::mem::forget(self);
@@ -113,4 +115,15 @@ impl<T:ISerde+'static> ITypeCaseToISerde for SharedPtr<T>{
              SharedPtr::from(rc)
          }
      }
+
+    #[cfg(feature ="Arc")]
+    #[inline]
+    fn un_cast(self) -> SharedPtr<dyn ISerde> {
+        let ptr = &self as *const SharedPtr<T> as *const Arc<T>;
+        std::mem::forget(self);
+        unsafe {
+            let rc = ptr.read() as Arc<dyn ISerde>;
+            SharedPtr::from(rc)
+        }
+    }
 }
