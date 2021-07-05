@@ -27,10 +27,11 @@ pub mod test {
     }
 }
 
+use xxlib::*;
+use test::*;
+
 #[test]
 pub fn test()->anyhow::Result<()>{
-    use xxlib::*;
-    use test::*;
     register_pkg_objs();
 
     let mut foo=Foo::default();
