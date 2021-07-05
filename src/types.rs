@@ -22,8 +22,19 @@ pub trait ISerdeTypeId{
     fn get_type_id(&self)->u16;
 }
 
+
 /// 序列化基本trait
+#[cfg(not(feature ="Arc"))]
 pub trait ISerde:ISerdeTypeId{
+    /// 写入当前对象 到 BytesMut
+    fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
+    /// 从Bytes 装载当前对象
+    fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+}
+
+/// 序列化基本trait
+#[cfg(feature ="Arc")]
+pub trait ISerde:ISerdeTypeId+Send+Sync{
     /// 写入当前对象 到 BytesMut
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
