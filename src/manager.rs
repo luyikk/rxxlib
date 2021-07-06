@@ -25,11 +25,9 @@ static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
 pub fn filter_ids(like:&str)->Vec<i32>{
     let mut table=Vec::new();
     unsafe {
-        for (typeid,name) in (*TYPES.register_name.get()).iter().enumerate() {
-            if let Some(name)=*name{
-                if let Some(0)= name.find(like){
-                    table.push(typeid as i32)
-                }
+        for (typeid,name) in (*TYPES.register_name.get()).iter() {
+            if let Some(0) = name.find(like) {
+                table.push(*typeid as i32)
             }
         }
     }
