@@ -3,15 +3,15 @@ use xxlib_builder::*;
 use super::ref_class::*;
 
 #[allow(dead_code)]
-const  MD5:&'static str="#*MD5<67e83101f793ed7fe8ac96fe32ee91b9>*#";
+const  MD5:&'static str="#*MD5<815d6581062ff3d285ae201c855f76a8>*#";
 
 #[allow(dead_code,non_snake_case)]
 pub fn CodeGen_Test(){
-    ObjectManager::register::<PKG_TestBase>();
-    ObjectManager::register::<PKG_TestStruct2>();
-    ObjectManager::register::<PKG_Base>();
-    ObjectManager::register::<PKG_P_Point>();
-    ObjectManager::register::<PKG_Foo>();
+    ObjectManager::register::<PKG_TestBase>(stringify!(PKG_TestBase));
+    ObjectManager::register::<PKG_TestStruct2>(stringify!(PKG_TestStruct2));
+    ObjectManager::register::<PKG_Base>(stringify!(PKG_Base));
+    ObjectManager::register::<PKG_P_Point>(stringify!(PKG_P_Point));
+    ObjectManager::register::<PKG_Foo>(stringify!(PKG_Foo));
 }
 
 /// Test Struct
@@ -69,7 +69,6 @@ pub struct PKG_TestStruct2{
 #[cmd(typeid(121),compatible(false))]
 pub struct PKG_Base{
     /// S1
-    #[cmd(default(0))]
     pub S1:i32,
     /// S2
     pub S2:String,
@@ -85,9 +84,7 @@ pub struct PKG_Base{
 #[derive(build,Debug)]
 #[cmd(typeid(122),compatible(true))]
 pub struct PKG_P_Point{
-    #[cmd(default(0))]
     pub X:i32,
-    #[cmd(default(0))]
     pub Y:i32,
     pub Z:Option<f64>,
 }
@@ -99,9 +96,7 @@ pub struct PKG_P_Point{
 pub struct PKG_Foo{
     /// Parent Class
     pub base:PKG_Base,
-    #[cmd(default(0))]
     pub P1:i32,
-    #[cmd(default(0.0))]
     pub P2:f32,
     pub P3:String,
     pub Buff:Vec<u8>,
@@ -117,9 +112,7 @@ pub struct PKG_Foo{
 #[derive(build,Debug)]
 #[cmd(compatible(false))]
 pub struct PKG_P_Point2{
-    #[cmd(default(0.0))]
     pub x:f32,
-    #[cmd(default(0.0))]
     pub y:f32,
 }
 
@@ -130,7 +123,6 @@ pub struct PKG_P_Point2{
 pub struct PKG_P_Point3{
     /// Parent Class
     pub base:PKG_P_Point2,
-    #[cmd(default(0.0))]
     pub z:f32,
 }
 

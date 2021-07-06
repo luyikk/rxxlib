@@ -1,3 +1,4 @@
+
 use anyhow::*;
 use xxlib::*;
 use xxlib_builder::*;
@@ -39,8 +40,8 @@ struct Foo2{
 }
 
 pub fn register_pkg_objs(){
-    xxlib::ObjectManager::register::<Foo>();
-    xxlib::ObjectManager::register::<Foo2>();
+    xxlib::ObjectManager::register::<Foo>(stringify!(Foo));
+    xxlib::ObjectManager::register::<Foo2>(stringify!(Foo2));
 }
 
 

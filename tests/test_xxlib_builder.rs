@@ -22,13 +22,14 @@ pub mod test {
 
 
     pub fn register_pkg_objs() {
-        xxlib::ObjectManager::register::<Foo>();
-        xxlib::ObjectManager::register::<Foo2>();
+        xxlib::ObjectManager::register::<Foo>(stringify!(Foo));
+        xxlib::ObjectManager::register::<Foo2>(stringify!(Foo2));
     }
 }
 
 use xxlib::*;
 use test::*;
+
 
 #[test]
 pub fn test()->anyhow::Result<()>{
@@ -59,5 +60,7 @@ pub fn test()->anyhow::Result<()>{
     assert_eq!(foo2_ptr.base.name,ptr.base.name);
     assert_eq!(foo2_ptr.id,ptr.base.child.upgrade().ok_or_else(||anyhow::anyhow!("none"))?.id);
 
+    let x= filter_ids("Foo");
+    assert_eq!(x,&[106,107]);
     Ok(())
 }

@@ -79,8 +79,8 @@ impl ISerde for Foo2{
 
  fn main() ->Result<()> {
 
-     ObjectManager::register::<Foo>();
-     ObjectManager::register::<Foo2>();
+     ObjectManager::register::<Foo>(stringify!(Foo));
+     ObjectManager::register::<Foo2>(stringify!(Foo2));
 
 
      let mut data = Data::with_capacity(100000000);

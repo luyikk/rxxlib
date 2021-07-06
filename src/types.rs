@@ -55,7 +55,8 @@ pub type CreateFn=fn() -> SharedPtr<dyn ISerde>;
 
 /// 用于存储类型和TypeId的映射 实现根据Typeid 创建对象
 pub struct TypeClass<const LEN:usize>{
-    register_table:UnsafeCell<[Option<CreateFn>;LEN]>
+   pub(crate) register_table:UnsafeCell<[Option<CreateFn>;LEN]>,
+   pub(crate) register_name:UnsafeCell<[Option<&'static str>;LEN]>
 }
 
 unsafe impl<const LEN:usize> Send for TypeClass<LEN>{}
@@ -64,14 +65,16 @@ unsafe impl<const LEN:usize> Sync for TypeClass<LEN>{}
 impl<const LEN:usize> TypeClass<LEN>{
     pub const fn new()->Self {
         TypeClass {
-            register_table:UnsafeCell::new([None;LEN])
+            register_table:UnsafeCell::new([None;LEN]),
+            register_name:UnsafeCell::new([None;LEN])
         }
     }
 
     /// 注册TypeId
-    pub fn register(&self,typeid:u16,cfn:CreateFn){
+    pub fn register(&self,typeid:u16,name:&'static str,cfn:CreateFn){
         unsafe {
-            (*self.register_table.get())[typeid as usize] =Some(cfn)
+            (*self.register_table.get())[typeid as usize] = Some(cfn);
+            (*self.register_name.get())[typeid as usize] = Some(name)
         }
     }
 

@@ -2,11 +2,11 @@
 use xxlib_builder::*;
 
 #[allow(dead_code)]
-const  MD5:&'static str="#*MD5<8ab14b0821f2ef39d8537dc0f53ccd7c>*#";
+const  MD5:&'static str="#*MD5<63df4158d595fbeb7d1151d535a36ef5>*#";
 
 #[allow(dead_code,non_snake_case)]
 pub fn CodeGen_Ref_class(){
-    ObjectManager::register::<PKG_Ref_TypeName>();
+    ObjectManager::register::<PKG_Ref_TypeName>(stringify!(PKG_Ref_TypeName));
 }
 
 /// Test Ref

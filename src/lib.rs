@@ -9,7 +9,7 @@ pub mod types;
 pub use data_rw::Data;
 pub use data_rw::DataReader;
 
-pub use manager::{ObjectManager,IReadInner,IWriteInner};
+pub use manager::{ObjectManager,IReadInner,IWriteInner,filter_ids};
 pub use types::{ISerdeTypeId, ISerde, IStruct,ISerdeCaseToType};
 
 #[cfg(not(feature ="Arc"))]

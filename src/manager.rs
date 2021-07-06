@@ -19,7 +19,22 @@ pub use sharedptr::Arc::SharedPtr;
 use std::sync::{Arc, Weak};
 
 
+
 static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
+
+pub fn filter_ids(like:&str)->Vec<u16>{
+    let mut table=Vec::new();
+    unsafe {
+        for (typeid,name) in (*TYPES.register_name.get()).iter().enumerate() {
+            if let Some(name)=*name{
+                if let Some(0)= name.find(like){
+                    table.push(typeid as u16)
+                }
+            }
+        }
+    }
+    table
+}
 
 /// 用于筛选 struct 内部写入 的类型判断
 pub trait IWriteInner{
@@ -79,8 +94,8 @@ impl ObjectManager{
     /// 注册 struct 和 Typeid 映射
     #[cfg(not(feature ="Arc"))]
     #[inline]
-    pub fn register<T:Default+ ISerde+'static>(){
-        TYPES.register(T::type_id(),||{
+    pub fn register<T:Default+ ISerde+'static>(name:&'static str){
+        TYPES.register(T::type_id(),name,||{
             SharedPtr::from(Rc::new(T::default()) as Rc<dyn ISerde>)
         });
     }
@@ -88,8 +103,8 @@ impl ObjectManager{
     /// 注册 struct 和 Typeid 映射
     #[cfg(feature ="Arc")]
     #[inline]
-    pub fn register<T:Default+ ISerde+'static>(){
-        TYPES.register(T::type_id(),||{
+    pub fn register<T:Default+ ISerde+'static>(name:&'static str){
+        TYPES.register(T::type_id(),name,||{
             SharedPtr::from(Arc::new(T::default()) as Arc<dyn ISerde>)
         });
     }

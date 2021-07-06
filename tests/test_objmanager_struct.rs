@@ -20,8 +20,7 @@ struct Foo2{
 
 #[test]
 pub fn test()->Result<()>{
-    //ObjectManager::register::<Foo>();
-    ObjectManager::register::<Foo2>();
+    ObjectManager::register::<Foo2>(stringify!(Foo2));
     let mut foo=Foo::default();
     foo.name="123123".to_string();
     foo.id=100;
