@@ -86,7 +86,9 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
         });
 
         if let Some(typeid)=typeid {
+            let const_type_id_name=format_ident!("{}_ID",name.to_string().to_uppercase());
             let expanded = quote! {
+                pub const #const_type_id_name:u16 = #typeid;
                 impl xxlib::ISerdeTypeId for #name{
                     #[inline(always)]
                     fn type_id() -> u16 where Self: Sized {

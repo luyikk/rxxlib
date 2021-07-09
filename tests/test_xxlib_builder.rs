@@ -55,6 +55,7 @@ pub fn test()->anyhow::Result<()>{
     let mut dr=DataReader::from( &data[..]);
     let ptr= om.read_ptr(&mut dr)?.cast::<Foo2>()?;
 
+    assert_eq!(FOO2_ID,ptr.get_type_id());
     assert_eq!(foo2_ptr.id,ptr.id);
     assert_eq!(foo2_ptr.base.id,ptr.base.id);
     assert_eq!(foo2_ptr.base.name,ptr.base.name);
