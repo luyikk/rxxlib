@@ -87,7 +87,6 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                     }
                     #[inline]
                     fn get_type_id(&self) -> u16 {
-                       use xxlib::ISerdeTypeId;
                        Self::type_id()
                     }
                 }
@@ -198,7 +197,6 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                     }
                     #[inline]
                     fn get_type_id(&self) -> u16 {
-                       use xxlib::ISerdeTypeId;
                        Self::type_id()
                     }
                 }
