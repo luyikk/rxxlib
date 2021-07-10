@@ -6,6 +6,7 @@ use syn::spanned::Spanned;
 
 
 
+
 #[proc_macro_derive(build,attributes(cmd))]
 pub fn make(input :TokenStream)->TokenStream{
     let derive_input = parse_macro_input!(input as DeriveInput);
@@ -115,7 +116,7 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                 impl ToString for #name{
                     #[inline]
                     fn to_string(&self) -> String {
-                         format!("{:?}",self)
+                         ::std::format!("{:?}",self)
                     }
                 }
             };
@@ -161,7 +162,7 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                 impl ToString for #name{
                     #[inline]
                     fn to_string(&self) -> String {
-                         format!("{:?}",self)
+                         ::std::format!("{:?}",self)
                     }
                 }
             };
@@ -232,7 +233,7 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                 impl ToString for #name{
                     #[inline]
                     fn to_string(&self) -> String {
-                         format!("{:?}",self)
+                         ::std::format!("{:?}",self)
                     }
                 }
             };
@@ -283,7 +284,7 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
                 impl ToString for #name{
                     #[inline]
                     fn to_string(&self) -> String {
-                         format!("{:?}",self)
+                         ::std::format!("{:?}",self)
                     }
                 }
             };
