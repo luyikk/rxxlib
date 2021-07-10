@@ -35,20 +35,11 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
 
 
     let is_compatible= match derive_input.tag_parameter(&parse_quote!(cmd), &parse_quote!(compatible)){
-        Some(p)=>{
-            match p{
-                NestedMeta::Lit(value)=>{
-                    match value {
-                        Lit::Bool(v)=>{
-                            v.value
-                        },
-                        _=>false
-                    }
-                },
-                _=>false
-            }
+        Some(NestedMeta::Lit(Lit::Bool(v)))=>{
+          v.value
         },
-        None=>false
+        None=>false,
+        _=>false
     };
 
     let write= derive_input.fields().iter().filter(|f|{!f.is_phantom_data()}).map(|f|{
@@ -304,48 +295,43 @@ fn impl_default(derive_input: &syn::DeriveInput) ->TokenStream{
 }
 
 fn get_fmt_default(f: &Field,  x: NestedMeta) -> proc_macro2::TokenStream {
-    return match x {
-            NestedMeta::Lit(value) => {
-                match value {
-                    Lit::Int(v) => {
-                        quote_spanned! {
+    match x {
+        NestedMeta::Lit(Lit::Int(v)) => {
+            quote_spanned! {
                            f.span()=> #v
                         }
-                    }
-                    Lit::Float(v) => {
-                        quote_spanned! {
+        }
+        NestedMeta::Lit(Lit::Float(v)) => {
+            quote_spanned! {
                            f.span()=> #v
                         }
-                    }
-                    Lit::Bool(v) => {
-                        quote_spanned! {
+        }
+        NestedMeta::Lit(Lit::Bool(v)) => {
+            quote_spanned! {
                            f.span()=> #v
                         }
-                    }
-                    Lit::Char(v) => {
-                        quote_spanned! {
+        }
+        NestedMeta::Lit(Lit::Char(v)) => {
+            quote_spanned! {
                            f.span()=> #v
                         }
-                    }
-                    Lit::Str(v) => {
-                        quote_spanned! {
+        }
+        NestedMeta::Lit(Lit::Str(v)) => {
+            quote_spanned! {
                            f.span()=> #v.to_string()
                         }
-                    }
-                    _ => {
-                        quote_spanned! {
-                           f.span()=> ::core::default::Default::default()
-                        }
-                    }
-                }
-            },
-            NestedMeta::Meta(value) => {
-
-                quote_spanned! {
+        },
+        NestedMeta::Meta(value) => {
+            quote_spanned! {
                    f.span()=> #value
                 }
-            }
         }
+        _ => {
+            quote_spanned! {
+                           f.span()=> ::core::default::Default::default()
+                        }
+        }
+    }
 }
 
 #[proc_macro_attribute]

@@ -20,7 +20,7 @@ ordnung = "0.0.1"
 data-rw="1.5"
 
 [dev-dependencies]
-xxlib_builder="0.1"
+xxlib_builder="0.2"
 
 [features]
 default=[]
