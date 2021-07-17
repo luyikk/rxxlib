@@ -1,6 +1,6 @@
 [package]
 name = "xxlib"
-version = "0.2.6"
+version = "0.2.7"
 authors = ["yi lu <luyikk@126.com>"]
 edition = "2018"
 repository = "https://github.com/luyikk/rxxlib"

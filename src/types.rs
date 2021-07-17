@@ -13,6 +13,7 @@ pub use std::rc::Rc;
 pub use sharedptr::Arc::SharedPtr;
 #[cfg(feature ="Arc")]
 pub use std::sync::Arc;
+use std::fmt::Debug;
 
 /// 用于给类型返回TypeId
 pub trait ISerdeTypeId{
@@ -25,7 +26,7 @@ pub trait ISerdeTypeId{
 
 /// 序列化基本trait
 #[cfg(not(feature ="Arc"))]
-pub trait ISerde:ISerdeTypeId{
+pub trait ISerde:ISerdeTypeId+Debug{
     /// 写入当前对象 到 BytesMut
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
@@ -34,7 +35,7 @@ pub trait ISerde:ISerdeTypeId{
 
 /// 序列化基本trait
 #[cfg(feature ="Arc")]
-pub trait ISerde:ISerdeTypeId+Send+Sync{
+pub trait ISerde:ISerdeTypeId+Debug+Send+Sync{
     /// 写入当前对象 到 BytesMut
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
