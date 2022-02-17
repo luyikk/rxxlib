@@ -6,7 +6,7 @@ use data_rw::Data;
 use data_rw::DataReader;
 
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 struct Foo{
     id:i32,
     name:String,
@@ -48,7 +48,7 @@ impl ISerde for Foo{
     }
 }
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 struct Foo2{
     id:u64
 }
@@ -94,6 +94,7 @@ impl ISerde for Foo2{
 
      let  foo_ptr =SharedPtr::new(foo);
 
+
      for _ in 0..10 {
          data.clear();
          let start = Instant::now();
@@ -120,7 +121,8 @@ impl ISerde for Foo2{
              //dr.read_var_integer::<i32>()?;
              //str.assign(dr.read_str()?);
 
-            // foo_ptr=  p.read_ptr(&mut dr)?.cast()?;
+             //let foo_ptr=  p.read_ptr(&mut dr)?;
+            // println!("{}",foo_ptr.debug());
              p.read_from(&mut dr,&foo_ptr)?;
            // p.read_(&mut dr,&mut t)?;
             // p.read_(&mut dr,&mut foo)?;

@@ -31,6 +31,9 @@ pub trait ISerde:ISerdeTypeId+Debug{
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
     fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+    fn debug(&self)->String{
+        format!("{:?}",self)
+    }
 }
 
 /// 序列化基本trait
@@ -40,6 +43,10 @@ pub trait ISerde:ISerdeTypeId+Debug+Send+Sync{
     fn write_to(&self,om:&ObjectManager,data:&mut Data)->Result<()>;
     /// 从Bytes 装载当前对象
     fn read_from(&mut self,om:&ObjectManager,data:&mut DataReader)->Result<()>;
+
+    fn debug(&self)->String{
+        format!("{:?}",self)
+    }
 }
 
 /// 常规结构类型序列化反序列化接口
