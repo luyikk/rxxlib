@@ -10,7 +10,8 @@ use data_rw::DataReader;
 struct Foo{
     id:i32,
     name:String,
-   // p:Weak<Foo>
+    p:Weak<Foo>,
+    x:SharedPtr<Foo2>
 }
 
 
@@ -32,8 +33,8 @@ impl ISerde for Foo{
     fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
         om.write_(data,&self.id)?;
         om.write_(data,&self.name)?;
-       // om.write_(data,&self.p);
-        // om.write_(data,&self.x);
+        om.write_(data,&self.p)?;
+        om.write_(data,&self.x)?;
         // om.write_(data,&self.m);
         Ok(())
     }
@@ -41,8 +42,8 @@ impl ISerde for Foo{
     fn read_from(&mut self, om: &ObjectManager, data:&mut DataReader)->Result<()> {
         om.read_(data, &mut self.id)?;
         om.read_(data, &mut self.name)?;
-        //om.read_(data, &mut self.p)?;
-        // om.read_(data, &mut self.x)?;
+        om.read_(data, &mut self.p)?;
+        om.read_(data, &mut self.x)?;
         // om.read_(data, &mut self.m)?;
         Ok(())
     }
@@ -85,6 +86,7 @@ impl ISerde for Foo2{
 
      let mut data = Data::with_capacity(100000000);
      let p = ObjectManager::new();
+
     // let foo_ptr =ObjectManager::create(Foo::type_id()).ok_or_else(||anyhow!("none"))?.cast::<Foo>()?;
 
 
@@ -93,7 +95,11 @@ impl ISerde for Foo2{
      foo.name = "111111".to_string();
 
      let  foo_ptr =SharedPtr::new(foo);
+     unsafe {
+         foo_ptr.get_mut_ref().p =foo_ptr.weak().unwrap();
+         foo_ptr.get_mut_ref().x=SharedPtr::new(Foo2{ id: 1 })
 
+     }
 
      for _ in 0..10 {
          data.clear();
@@ -121,7 +127,7 @@ impl ISerde for Foo2{
              //dr.read_var_integer::<i32>()?;
              //str.assign(dr.read_str()?);
 
-             //let foo_ptr=  p.read_ptr(&mut dr)?;
+            // let foo_ptr=  p.read_ptr(&mut dr)?;
             // println!("{}",foo_ptr.debug());
              p.read_from(&mut dr,&foo_ptr)?;
            // p.read_(&mut dr,&mut t)?;
