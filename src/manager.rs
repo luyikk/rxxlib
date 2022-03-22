@@ -17,7 +17,7 @@ use std::rc::{Rc, Weak};
 pub use sharedptr::Arc::SharedPtr;
 #[cfg(feature ="Arc")]
 use std::sync::{Arc, Weak};
-
+use sharedptr::unsafe_def::IGetMutUnchecked;
 
 
 static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
@@ -193,7 +193,7 @@ impl ObjectManager{
             .ok_or_else(move ||anyhow!("typeid not found:{}",typeid))?;
         unsafe {
             (*self.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(self, data)?;
+            ptr.get_mut_unchecked().read_from(self, data)?;
         }
         Ok(ptr)
     }
@@ -213,7 +213,7 @@ impl ObjectManager{
         ensure!(typeid==ptr.get_type_id(),"typeid error,{}!={}",typeid,ptr.get_type_id());
         unsafe {
             (*self.read_ptr_vec.get()).push(ptr.clone().un_cast());
-            ptr.get_mut_ref().read_from(self, data)?;
+            ptr.get_mut_unchecked().read_from(self, data)?;
         }
         Ok(())
     }
@@ -474,7 +474,7 @@ fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, 
             let ptr = ObjectManager::create(typeid)
                 .ok_or_else(move || anyhow!("not found typeid:{}",typeid))?;
             (*om.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(om, data)?;
+            ptr.get_mut_unchecked().read_from(om, data)?;
             Ok(ptr.cast::<T>()?)
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);

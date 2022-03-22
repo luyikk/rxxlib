@@ -4,6 +4,7 @@ use xxlib::*;
 use std::time::Instant;
 use data_rw::Data;
 use data_rw::DataReader;
+use sharedptr::unsafe_def::IGetMutUnchecked;
 
 
 #[derive(Default,Debug)]
@@ -96,8 +97,8 @@ impl ISerde for Foo2{
 
      let  foo_ptr =SharedPtr::new(foo);
      unsafe {
-         foo_ptr.get_mut_ref().p =foo_ptr.weak().unwrap();
-         foo_ptr.get_mut_ref().x=SharedPtr::new(Foo2{ id: 1 })
+         foo_ptr.get_mut_unchecked().p =foo_ptr.weak().unwrap();
+         foo_ptr.get_mut_unchecked().x=SharedPtr::new(Foo2{ id: 1 })
 
      }
 

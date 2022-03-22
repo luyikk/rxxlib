@@ -1,6 +1,7 @@
 use xxlib::*;
 use xxlib_builder::*;
 use anyhow::*;
+use sharedptr::unsafe_def::IGetMutUnchecked;
 
 
 #[derive(build,Debug,Clone)]
@@ -31,7 +32,7 @@ pub fn test()->Result<()>{
 
     let foo2_ptr=SharedPtr::<Foo2>::new(foo2);
     unsafe {
-        foo2_ptr.get_mut_ref().base[0].child = foo2_ptr.weak().ok_or_else(|| anyhow!("is none"))?;
+        foo2_ptr.get_mut_unchecked().base[0].child = foo2_ptr.weak().ok_or_else(|| anyhow!("is none"))?;
     }
 
     let mut data=Data::new();
