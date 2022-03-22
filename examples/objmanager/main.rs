@@ -102,6 +102,8 @@ impl ISerde for Foo2{
 
      }
 
+     println!("{:?}",foo_ptr);
+
      for _ in 0..10 {
          data.clear();
          let start = Instant::now();
