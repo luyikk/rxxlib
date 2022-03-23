@@ -478,10 +478,10 @@ fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, 
             Ok(ptr.cast::<T>()?)
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);
-            let ptr = (*om.read_ptr_vec.get()).get(offset - 1)
-                .ok_or_else(move || anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?.clone();
+            let ptr = (*om.read_ptr_vec.get()).get(offset - 1).cloned()
+                .ok_or_else(move || anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?;
             ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
-            Ok(ptr.clone().cast::<T>()?)
+            Ok(ptr.cast::<T>()?)
         }
     }
 }

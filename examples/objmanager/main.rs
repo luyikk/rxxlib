@@ -11,7 +11,7 @@ use sharedptr::unsafe_def::IGetMutUnchecked;
 struct Foo{
     id:i32,
     name:String,
-    p:Weak<Foo>,
+    p:Weak<Foo2>,
     x:SharedPtr<Foo2>
 }
 
@@ -97,8 +97,9 @@ impl ISerde for Foo2{
 
      let  foo_ptr =SharedPtr::new(foo);
      unsafe {
-         foo_ptr.get_mut_unchecked().p =foo_ptr.weak().unwrap();
-         foo_ptr.get_mut_unchecked().x=SharedPtr::new(Foo2{ id: 1 })
+         let x=SharedPtr::new(Foo2{ id: 1 });
+         foo_ptr.get_mut_unchecked().p =x.weak().unwrap();
+         foo_ptr.get_mut_unchecked().x=x
 
      }
 

@@ -20,6 +20,7 @@ struct Foo2{
 
 
 #[test]
+#[cfg_attr(miri, ignore)]
 pub fn test()->Result<()>{
     ObjectManager::register::<Foo2>(stringify!(Foo2));
     let mut foo=Foo::default();
