@@ -91,9 +91,8 @@ impl ISerde for Foo2{
     }
 }
 
-
-
 #[test]
+#[cfg_attr(miri, ignore)]
 pub fn test()->Result<()>{
     ObjectManager::register::<Foo>(stringify!(Foo));
     ObjectManager::register::<Foo2>(stringify!(Foo2));

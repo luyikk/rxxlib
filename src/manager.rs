@@ -211,7 +211,6 @@ impl ObjectManager{
         ensure!(typeid==ptr.get_type_id(),"typeid error,{}!={}",typeid,ptr.get_type_id());
         unsafe {
             (*self.read_ptr_vec.get()).push(ptr.clone().un_cast());
-            let ptr =ptr.clone();
             ptr.get_mut_unchecked().read_from(self, data)?;
         }
         Ok(())
@@ -340,22 +339,6 @@ impl<T:IWriteInner> IWriteInner for &[T]{
         Ok(())
     }
 }
-// impl IWriteInner for Vec<u8>{
-//     #[inline]
-//     fn write_(&self,_om: &ObjectManager, data: &mut Data)->Result<()> {
-//         data.write_var_integer(&(self.len() as u64));
-//         data.write_buf(self);
-//         Ok(())
-//     }
-// }
-// impl IWriteInner for &[u8]{
-//     #[inline]
-//     fn write_(&self, _om: &ObjectManager, data: &mut Data)->Result<()> {
-//         data.write_var_integer(&(self.len() as u64));
-//         data.write_buf(self);
-//         Ok(())
-//     }
-// }
 macro_rules! impl_iwrite_inner_for_mapset {
     ($type:tt) =>(
     impl <K:IWriteInner> IWriteInner for $type::<K>{
@@ -492,10 +475,10 @@ fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, 
             Ok(ptr.cast::<T>()?)
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);
-            let ptr = (*om.read_ptr_vec.get()).get(offset - 1)
-                .ok_or_else(move || anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?.clone();
+            let ptr = (*om.read_ptr_vec.get()).get(offset - 1).cloned()
+                .ok_or_else(move || anyhow!("read type:{} offset error,not found offset:{}",T::type_id(),offset))?;
             ensure!(T::type_id()==ptr.get_type_id(),"read type:{} error offset type:{}",T::type_id(),ptr.get_type_id());
-            Ok(ptr.clone().cast::<T>()?)
+            Ok(ptr.cast::<T>()?)
         }
     }
 }

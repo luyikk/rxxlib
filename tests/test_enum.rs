@@ -47,6 +47,7 @@ pub fn register_pkg_objs(){
 
 
 #[test]
+#[cfg_attr(miri, ignore)]
 pub fn test()->Result<()>{
     use xxlib::*;
 
