@@ -71,11 +71,13 @@ impl ISerde for Foo2{
     #[inline(always)]
     fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
         om.write_(data,&self.id)?;
+        om.write_(data,&self.f)?;
         Ok(())
     }
     #[inline(always)]
     fn read_from(&mut self, om: &ObjectManager, data: &mut DataReader)->Result<()> {
         om.read_(data, &mut self.id)?;
+        om.read_(data, &mut self.f)?;
         Ok(())
     }
 }
