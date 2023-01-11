@@ -63,7 +63,7 @@ pub fn test_buff()->Result<()>{
     let mut data=Data::new();
     let om=ObjectManager::new();
     om.write_(&mut data,&"123123")?;
-    om.write_(&mut data,&vec![1,2,3,4,5])?;
+    om.write_(&mut data,&vec![1u8,2,3,4,5])?;
     let x=[1u8,2,3,4,5];
     om.write_(&mut data,&&x[..])?;
     let mut dr=DataReader::from(&data[..]);

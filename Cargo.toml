@@ -1,6 +1,6 @@
 [package]
 name = "xxlib"
-version = "0.2.7"
+version = "0.3.0"
 authors = ["yi lu <luyikk@126.com>"]
 edition = "2018"
 repository = "https://github.com/luyikk/rxxlib"
@@ -14,7 +14,7 @@ readme="README.md"
 [dependencies]
 paste="1.0"
 anyhow = "1.0"
-sharedptr = "0.2"
+sharedptr = "0.3.4"
 impl-trait-for-tuples = "0.2"
 ordnung = "0.0.1"
 data-rw="1.5"

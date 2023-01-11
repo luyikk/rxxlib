@@ -1,8 +1,3 @@
-#![feature(auto_traits)]
-#![feature(negative_impls)]
-#![feature(const_fn_fn_ptr_basics)]
-#![feature(const_fn_trait_bound)]
-
 pub mod manager;
 pub mod types;
 

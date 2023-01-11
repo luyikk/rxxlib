@@ -6,10 +6,11 @@ use data_rw::Data;
 use data_rw::DataReader;
 
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 struct Foo{
     id:i32,
     name:String,
+    data:Vec<u8>,
    // p:Weak<Foo>
 }
 
@@ -32,6 +33,7 @@ impl ISerde for Foo{
     fn write_to(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
         om.write_(data,&self.id)?;
         om.write_(data,&self.name)?;
+        om.write_(data,&self.data)?;
        // om.write_(data,&self.p);
         // om.write_(data,&self.x);
         // om.write_(data,&self.m);
@@ -41,6 +43,7 @@ impl ISerde for Foo{
     fn read_from(&mut self, om: &ObjectManager, data:&mut DataReader)->Result<()> {
         om.read_(data, &mut self.id)?;
         om.read_(data, &mut self.name)?;
+        om.read_(data,&mut self.data)?;
         //om.read_(data, &mut self.p)?;
         // om.read_(data, &mut self.x)?;
         // om.read_(data, &mut self.m)?;
@@ -48,9 +51,10 @@ impl ISerde for Foo{
     }
 }
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 struct Foo2{
-    id:u64
+    id:u64,
+    f:SharedPtr<Foo>
 }
 impl ISerdeTypeId for Foo2{
     #[inline(always)]
@@ -91,8 +95,15 @@ impl ISerde for Foo2{
      let mut foo=Foo::default();
      foo.id=100;
      foo.name = "111111".to_string();
+     foo.data=vec![1;128];
 
      let  foo_ptr =SharedPtr::new(foo);
+
+     let mut foo2=Foo2::default();
+     foo2.id=1112;
+     foo2.f=foo_ptr;
+
+     let foo_ptr =SharedPtr::new(foo2);
 
      for _ in 0..10 {
          data.clear();

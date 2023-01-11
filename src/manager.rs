@@ -7,6 +7,7 @@ use data_rw::DataReader;
 use anyhow::*;
 use crate::StringAssign;
 use std::hash::Hash;
+use std::mem::size_of;
 
 
 #[cfg(not(feature ="Arc"))]
@@ -17,7 +18,7 @@ use std::rc::{Rc, Weak};
 pub use sharedptr::Arc::SharedPtr;
 #[cfg(feature ="Arc")]
 use std::sync::{Arc, Weak};
-
+use sharedptr::unsafe_def::IGetMutUnchecked;
 
 
 static TYPES:TypeClass<65535>=TypeClass::<65535>::new();
@@ -63,9 +64,6 @@ impl IReadInner for TupleIdentifier{
     }
 }
 
-pub auto trait NotU8{}
-impl !NotU8 for u8{}
-impl NotU8 for String{}
 
 /// PKG 序列化 反序列化 的实现
 pub struct ObjectManager{
@@ -193,7 +191,7 @@ impl ObjectManager{
             .ok_or_else(move ||anyhow!("typeid not found:{}",typeid))?;
         unsafe {
             (*self.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(self, data)?;
+            ptr.get_mut_unchecked().read_from(self, data)?;
         }
         Ok(ptr)
     }
@@ -208,12 +206,13 @@ impl ObjectManager{
     }
 
     #[inline]
-    fn read_from_first<T:ISerde+'static>(&self,data:&mut DataReader,ptr:&SharedPtr<T>)->Result<()> {
+    fn read_from_first<T:ISerde+'static>(&self, data:&mut DataReader, ptr: &SharedPtr<T>) ->Result<()> {
         let typeid: u16 = data.read_var_integer()?;
         ensure!(typeid==ptr.get_type_id(),"typeid error,{}!={}",typeid,ptr.get_type_id());
         unsafe {
             (*self.read_ptr_vec.get()).push(ptr.clone().un_cast());
-            ptr.get_mut_ref().read_from(self, data)?;
+            let ptr =ptr.clone();
+            ptr.get_mut_unchecked().read_from(self, data)?;
         }
         Ok(())
     }
@@ -306,42 +305,57 @@ impl_iwrite_inner_number_fixed!(bool);
 impl_iwrite_inner_number_fixed!(f32);
 impl_iwrite_inner_number_fixed!(f64);
 
-impl <T:IWriteInner+NotU8> IWriteInner for Vec<T>{
+impl <T:IWriteInner> IWriteInner for Vec<T>{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data) ->Result<()>{
         data.write_var_integer(&(self.len() as u64));
-        for x in self.iter() {
-            x.write_(om,data)?;
+
+        if size_of::<T>()==1{
+            let buff=self.as_slice() as *const [T] as * const[u8];
+            unsafe {
+                data.write_buf(&*buff);
+            }
+        }else {
+            for x in self.iter() {
+                x.write_(om, data)?;
+            }
         }
         Ok(())
     }
 }
-impl<T:IWriteInner+NotU8> IWriteInner for &[T]{
+impl<T:IWriteInner> IWriteInner for &[T]{
     #[inline]
     fn write_(&self, om: &ObjectManager, data: &mut Data)->Result<()> {
         data.write_var_integer(&(self.len() as u64));
-        for x in self.iter() {
-            x.write_(om,data)?;
+        if size_of::<T>()==1{
+            let buff=*self as *const [T] as * const[u8];
+            unsafe {
+                data.write_buf(&*buff);
+            }
+        }else {
+            for x in self.iter() {
+                x.write_(om, data)?;
+            }
         }
         Ok(())
     }
 }
-impl IWriteInner for Vec<u8>{
-    #[inline]
-    fn write_(&self,_om: &ObjectManager, data: &mut Data)->Result<()> {
-        data.write_var_integer(&(self.len() as u64));
-        data.write_buf(self);
-        Ok(())
-    }
-}
-impl IWriteInner for &[u8]{
-    #[inline]
-    fn write_(&self, _om: &ObjectManager, data: &mut Data)->Result<()> {
-        data.write_var_integer(&(self.len() as u64));
-        data.write_buf(self);
-        Ok(())
-    }
-}
+// impl IWriteInner for Vec<u8>{
+//     #[inline]
+//     fn write_(&self,_om: &ObjectManager, data: &mut Data)->Result<()> {
+//         data.write_var_integer(&(self.len() as u64));
+//         data.write_buf(self);
+//         Ok(())
+//     }
+// }
+// impl IWriteInner for &[u8]{
+//     #[inline]
+//     fn write_(&self, _om: &ObjectManager, data: &mut Data)->Result<()> {
+//         data.write_var_integer(&(self.len() as u64));
+//         data.write_buf(self);
+//         Ok(())
+//     }
+// }
 macro_rules! impl_iwrite_inner_for_mapset {
     ($type:tt) =>(
     impl <K:IWriteInner> IWriteInner for $type::<K>{
@@ -474,7 +488,7 @@ fn read_shared_ptr<T:ISerde+'static>(om: &ObjectManager, data: &mut DataReader, 
             let ptr = ObjectManager::create(typeid)
                 .ok_or_else(move || anyhow!("not found typeid:{}",typeid))?;
             (*om.read_ptr_vec.get()).push(ptr.clone());
-            ptr.get_mut_ref().read_from(om, data)?;
+            ptr.get_mut_unchecked().read_from(om, data)?;
             Ok(ptr.cast::<T>()?)
         } else {
             ensure!(offset<= len,"read type:{} offset error,offset:{} > vec len:{}",T::type_id(),offset,len);
@@ -523,14 +537,6 @@ impl IReadInner for String{
     }
 }
 
-impl IReadInner for Vec<u8>{
-    #[inline(always)]
-    fn read_(&mut self, _om: &ObjectManager, data: &mut DataReader) -> Result<()> {
-        self.clear();
-        self.extend_from_slice(data.read_var_buf()?);
-        Ok(())
-    }
-}
 
 impl<T:IReadInner+ Default> IReadInner for Option<T>{
     #[inline]
@@ -546,15 +552,23 @@ impl<T:IReadInner+ Default> IReadInner for Option<T>{
     }
 }
 
-impl <T:IReadInner+Default+NotU8> IReadInner for Vec<T>{
+
+impl <T:IReadInner+Default+Clone> IReadInner for Vec<T>{
     #[inline]
     fn read_(&mut self, om: &ObjectManager, data: &mut DataReader) -> Result<()> {
-        let len=data.read_var_integer::<u32>()?;
         self.clear();
-        for _ in 0..len {
-            let mut v=T::default();
-            v.read_(om,data)?;
-            self.push(v);
+        if size_of::<T>()==1{
+            let b=data.read_var_buf()? as *const [u8] as *const[T];
+            unsafe{
+                self.extend_from_slice(&*b);
+            }
+        }else {
+            let len = data.read_var_integer::<u32>()?;
+            for _ in 0..len {
+                let mut v = T::default();
+                v.read_(om, data)?;
+                self.push(v);
+            }
         }
         Ok(())
     }

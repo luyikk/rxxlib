@@ -27,6 +27,7 @@ pub mod test {
     }
 }
 
+use sharedptr::unsafe_def::IGetMutUnchecked;
 use xxlib::*;
 use test::*;
 
@@ -45,7 +46,7 @@ pub fn test()->anyhow::Result<()>{
 
     let foo2_ptr=SharedPtr::new(foo2);
     unsafe {
-        foo2_ptr.base.get_mut_ref().child = foo2_ptr.weak().ok_or_else(|| anyhow::anyhow!("is none"))?;
+        foo2_ptr.base.get_mut_unchecked().child = foo2_ptr.weak().ok_or_else(|| anyhow::anyhow!("is none"))?;
     }
 
     let mut data=Data::new();
